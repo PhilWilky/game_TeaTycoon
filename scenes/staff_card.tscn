@@ -1,0 +1,74 @@
+[gd_scene format=3 uid="uid://batqqgdc2q7t7"]
+
+[node name="StaffCard" type="PanelContainer"]
+custom_minimum_size = Vector2(200, 120)
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 12
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Header" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="NameLabel" type="Label" parent="MarginContainer/VBoxContainer/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.2, 0.2, 0.8, 1)
+text = "Alice"
+
+[node name="TypeLabel" type="Label" parent="MarginContainer/VBoxContainer/Header"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4, 0.4, 0.4, 1)
+text = "Regular Staff"
+
+[node name="Stats" type="VBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="EfficiencyContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer/Stats"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="MarginContainer/VBoxContainer/Stats/EfficiencyContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.65, 0.65, 0.65, 1)
+text = "Efficiency:"
+
+[node name="Value" type="Label" parent="MarginContainer/VBoxContainer/Stats/EfficiencyContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "85%"
+horizontal_alignment = 2
+
+[node name="SalaryContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer/Stats"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="MarginContainer/VBoxContainer/Stats/SalaryContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.65, 0.65, 0.65, 1)
+text = "Salary:"
+
+[node name="Value" type="Label" parent="MarginContainer/VBoxContainer/Stats/SalaryContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "£12/hour"
+horizontal_alignment = 2
+
+[node name="ShiftContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer/Stats"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="MarginContainer/VBoxContainer/Stats/ShiftContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.65, 0.65, 0.65, 1)
+text = "Shift:"
+
+[node name="Value" type="Label" parent="MarginContainer/VBoxContainer/Stats/ShiftContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Morning"
+horizontal_alignment = 2
