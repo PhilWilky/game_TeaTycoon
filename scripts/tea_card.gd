@@ -1,12 +1,12 @@
 extends PanelContainer
 
-var tea_data: GameTypes.TeaItem
+var tea_data: Dictionary
 
-func setup(data):
+func setup(data: Dictionary) -> void:
 	tea_data = data
 	update_display()
 
-func update_display():
+func update_display() -> void:
 	# Update name
 	$MarginContainer/VBoxContainer/Header/NameLabel.text = tea_data.name
 	
@@ -14,18 +14,22 @@ func update_display():
 	$MarginContainer/VBoxContainer/Costs/CostLabel.text = "Cost: £%.2f" % tea_data.cost
 	$MarginContainer/VBoxContainer/Costs/PriceLabel.text = "Price: £%.2f" % tea_data.price
 	
-	# Update quality stars
+	# Update quality stars using Label nodes instead of TextureRect
 	var stars = $MarginContainer/VBoxContainer/QualityContainer/Stars
 	for child in stars.get_children():
 		child.queue_free()
 	
 	for i in range(5):
-		var star = TextureRect.new()
+		var star = Label.new()
+		star.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		star.custom_minimum_size = Vector2(16, 16)
-		# Changed from EXPAND_KEEP_ASPECT to the correct enum
-		star.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
-		# You'll need to add star textures to your project
-		star.texture = load("res://assets/star_%s.png" % ("filled" if i < tea_data.quality else "empty"))
+		# Use Unicode star characters
+		if i < tea_data.quality:
+			star.text = "★"  # Filled star
+			star.add_theme_color_override("font_color", Color(1, 0.8, 0, 1))  # Gold color
+		else:
+			star.text = "☆"  # Empty star
+			star.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5, 1))  # Gray color
 		stars.add_child(star)
 	
 	# Update satisfaction
@@ -35,7 +39,8 @@ func update_display():
 	var unlock_info = $MarginContainer/VBoxContainer/UnlockInfo
 	unlock_info.visible = !tea_data.unlocked
 	if !tea_data.unlocked:
-		unlock_info.text = "Unlocks on Day 3" if tea_data.name == "Earl Grey" else "Unlocks at Reputation 3"
+		if tea_data.has("unlock_condition"):
+			unlock_info.text = tea_data.unlock_condition
 	
 	# Update visual state
 	modulate = Color(1, 1, 1, 1.0 if tea_data.unlocked else 0.5)

@@ -1,0 +1,61 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/phase_panel.gd" id="1_panel"]
+
+[node name="PhasePanel" type="PanelContainer"]
+custom_minimum_size = Vector2(0, 60)
+anchors_preset = 10
+anchor_right = 1.0
+grow_horizontal = 2
+script = ExtResource("1_panel")
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 5
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="DayInfo" type="HBoxContainer" parent="MarginContainer/HBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="DayLabel" type="Label" parent="MarginContainer/HBoxContainer/DayInfo"]
+layout_mode = 2
+text = "Day"
+
+[node name="DayNumber" type="Label" parent="MarginContainer/HBoxContainer/DayInfo"]
+layout_mode = 2
+text = "1"
+
+[node name="PhaseInfo" type="HBoxContainer" parent="MarginContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 10
+
+[node name="PhaseLabel" type="Label" parent="MarginContainer/HBoxContainer/PhaseInfo"]
+layout_mode = 2
+text = "Current Phase:"
+
+[node name="PhaseName" type="Label" parent="MarginContainer/HBoxContainer/PhaseInfo"]
+layout_mode = 2
+text = "Morning Preparation"
+
+[node name="TimeInfo" type="HBoxContainer" parent="MarginContainer/HBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="TimeLeft" type="Label" parent="MarginContainer/HBoxContainer/TimeInfo"]
+layout_mode = 2
+text = "2:30"
+
+[node name="ProgressBar" type="ProgressBar" parent="MarginContainer/HBoxContainer/TimeInfo"]
+custom_minimum_size = Vector2(100, 16)
+layout_mode = 2
+size_flags_vertical = 4
+value = 50.0
+show_percentage = false

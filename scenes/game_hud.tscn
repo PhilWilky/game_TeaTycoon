@@ -1,0 +1,118 @@
+[gd_scene load_steps=7 format=3 uid="uid://bgnpeasn5ckbk"]
+
+[ext_resource type="Script" path="res://scripts/ui/game_hud.gd" id="1_hud"]
+[ext_resource type="Theme" uid="uid://bsbuftenfm3cj" path="res://themes/tea_shop_theme.tres" id="2_theme"]
+[ext_resource type="PackedScene" path="res://scenes/customer_queue.tscn" id="3_queue"]
+[ext_resource type="PackedScene" path="res://scenes/inventory_panel.tscn" id="4_inventory"]
+[ext_resource type="PackedScene" path="res://scenes/phase_panel.tscn" id="5_phase"]
+[ext_resource type="PackedScene" uid="uid://duq40fp7tjgy" path="res://scenes/tea_card.tscn" id="6_tea"]
+
+[node name="GameHUD" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("2_theme")
+script = ExtResource("1_hud")
+
+[node name="ContentContainer" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="VBoxContainer" type="VBoxContainer" parent="ContentContainer"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="PhasePanel" parent="ContentContainer/VBoxContainer" instance=ExtResource("5_phase")]
+layout_mode = 2
+
+[node name="CustomerQueue" parent="ContentContainer/VBoxContainer" instance=ExtResource("3_queue")]
+layout_mode = 2
+
+[node name="MainContent" type="HBoxContainer" parent="ContentContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 20
+
+[node name="TabContainer" type="TabContainer" parent="ContentContainer/VBoxContainer/MainContent"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Menu" type="MarginContainer" parent="ContentContainer/VBoxContainer/MainContent/TabContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="TeaGrid" type="GridContainer" parent="ContentContainer/VBoxContainer/MainContent/TabContainer/Menu"]
+layout_mode = 2
+columns = 3
+# Tea cards will be added here dynamically
+
+[node name="Staff" type="MarginContainer" parent="ContentContainer/VBoxContainer/MainContent/TabContainer"]
+visible = false
+layout_mode = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="ContentContainer/VBoxContainer/MainContent/TabContainer/Staff"]
+layout_mode = 2
+
+[node name="MorningShift" type="VBoxContainer" parent="ContentContainer/VBoxContainer/MainContent/TabContainer/Staff/VBoxContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="ContentContainer/VBoxContainer/MainContent/TabContainer/Staff/VBoxContainer/MorningShift"]
+layout_mode = 2
+text = "Morning Shift"
+
+[node name="StaffGrid" type="GridContainer" parent="ContentContainer/VBoxContainer/MainContent/TabContainer/Staff/VBoxContainer/MorningShift"]
+layout_mode = 2
+columns = 2
+
+[node name="EveningShift" type="VBoxContainer" parent="ContentContainer/VBoxContainer/MainContent/TabContainer/Staff/VBoxContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="ContentContainer/VBoxContainer/MainContent/TabContainer/Staff/VBoxContainer/EveningShift"]
+layout_mode = 2
+text = "Evening Shift"
+
+[node name="StaffGrid" type="GridContainer" parent="ContentContainer/VBoxContainer/MainContent/TabContainer/Staff/VBoxContainer/EveningShift"]
+layout_mode = 2
+columns = 2
+
+[node name="Reports" type="MarginContainer" parent="ContentContainer/VBoxContainer/MainContent/TabContainer"]
+visible = false
+layout_mode = 2
+
+[node name="StatsContainer" type="VBoxContainer" parent="ContentContainer/VBoxContainer/MainContent/TabContainer/Reports"]
+layout_mode = 2
+
+[node name="SidePanel" type="PanelContainer" parent="ContentContainer/VBoxContainer/MainContent"]
+custom_minimum_size = Vector2(250, 0)
+layout_mode = 2
+
+[node name="InventoryPanel" parent="ContentContainer/VBoxContainer/MainContent/SidePanel" instance=ExtResource("4_inventory")]
+layout_mode = 2
+
+[node name="ButtonContainer" type="HBoxContainer" parent="ContentContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="StartDayButton" type="Button" parent="ContentContainer/VBoxContainer/ButtonContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Start Day"
+
+[node name="SaveGameButton" type="Button" parent="ContentContainer/VBoxContainer/ButtonContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Save Game"

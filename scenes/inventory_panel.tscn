@@ -1,0 +1,81 @@
+# inventory_panel.tscn
+[gd_scene load_steps=2 format=3 uid="uid://your_uid_here"]
+
+[ext_resource type="Script" path="res://scripts/ui/inventory_panel.gd" id="1_panel"]
+
+[node name="InventoryPanel" type="PanelContainer"]
+custom_minimum_size = Vector2(200, 0)
+offset_right = 200.0
+offset_bottom = 300.0
+script = ExtResource("1_panel")
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Header" type="Label" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Inventory"
+horizontal_alignment = 1
+
+[node name="TeaList" type="VBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="BuildersTea" type="HBoxContainer" parent="MarginContainer/VBoxContainer/TeaList"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="MarginContainer/VBoxContainer/TeaList/BuildersTea"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Builder's Tea"
+
+[node name="Amount" type="Label" parent="MarginContainer/VBoxContainer/TeaList/BuildersTea"]
+layout_mode = 2
+text = "20"
+horizontal_alignment = 2
+
+[node name="EarlGrey" type="HBoxContainer" parent="MarginContainer/VBoxContainer/TeaList"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="MarginContainer/VBoxContainer/TeaList/EarlGrey"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Earl Grey"
+
+[node name="Amount" type="Label" parent="MarginContainer/VBoxContainer/TeaList/EarlGrey"]
+layout_mode = 2
+text = "15"
+horizontal_alignment = 2
+
+[node name="PremiumBlend" type="HBoxContainer" parent="MarginContainer/VBoxContainer/TeaList"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="MarginContainer/VBoxContainer/TeaList/PremiumBlend"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Premium Blend"
+
+[node name="Amount" type="Label" parent="MarginContainer/VBoxContainer/TeaList/PremiumBlend"]
+layout_mode = 2
+text = "10"
+horizontal_alignment = 2
+
+[node name="RestockButton" type="Button" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Restock"
+
+[node name="LowStockWarning" type="Label" parent="MarginContainer/VBoxContainer"]
+visible = false
+layout_mode = 2
+theme_override_colors/font_color = Color(0.92, 0.3, 0.3, 1)
+text = "Low stock warning!"
+horizontal_alignment = 1

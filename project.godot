@@ -18,6 +18,9 @@ config/icon="res://icon.svg"
 [autoload]
 
 GameTypes="*res://scripts/game_types.gd"
+Events="*res://scripts/events.gd"
+TeaManager="*res://scripts/tea_manager.gd"
+GameState="*res://scripts/game_state.gd"
 
 [rendering]
 
