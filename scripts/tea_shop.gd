@@ -1,4 +1,3 @@
-# tea_shop.gd
 extends Control
 
 # Scene References
@@ -32,7 +31,14 @@ const WEATHER_MODIFIERS = {
 var is_day_running: bool = false
 var day_timer: float = 0.0
 var customer_spawn_timer: float = 0.0
-var daily_stats: Dictionary
+var daily_stats = {
+	"revenue": 0.0,
+	"costs": 0.0,
+	"customers_served": 0,
+	"customers_missed": 0,
+	"satisfaction_total": 0.0,
+	"tea_sold": {}
+}
 
 # Tea Data
 const INITIAL_TEA_DATA = [
@@ -63,6 +69,8 @@ const INITIAL_TEA_DATA = [
 		"unlock_condition": "Reputation 3"
 	}
 ]
+
+signal day_ended(stats: Dictionary)
 
 func _ready() -> void:
 	# Initialize systems
@@ -95,19 +103,19 @@ func _connect_signals() -> void:
 	if save_button:
 		save_button.pressed.connect(_on_save_game)
 		
-	# Connect event signals
-	Events.connect("customer_entered", _on_customer_entered)
-	Events.connect("customer_left", _on_customer_left)
-	Events.connect("customer_served", _on_customer_served)
-	Events.connect("money_changed", _on_money_changed)
-	Events.connect("reputation_changed", _on_reputation_changed)
+	# Connect to Events autoload
+	Events.customer_entered.connect(_on_customer_entered)
+	Events.customer_left.connect(_on_customer_left)
+	Events.customer_served.connect(_on_customer_served)
+	Events.money_changed.connect(_on_money_changed)
+	Events.reputation_changed.connect(_on_reputation_changed)
 	
 	# Connect system signals
 	if customer_demand:
-		customer_demand.connect("customer_missed", _on_customer_missed)
+		customer_demand.customer_missed.connect(_on_customer_missed)
 	if inventory_system:
-		inventory_system.connect("stock_changed", _on_stock_changed)
-		inventory_system.connect("stock_depleted", _on_stock_depleted)
+		inventory_system.stock_changed.connect(_on_stock_changed)
+		inventory_system.stock_depleted.connect(_on_stock_depleted)
 
 func _init_daily_stats() -> Dictionary:
 	return {
@@ -139,7 +147,6 @@ func _setup_initial_tea_cards() -> void:
 		# Initialize inventory for this tea
 		if tea_data.unlocked:
 			inventory_system.initialize_tea(tea_data.name)
-
 func _process(delta: float) -> void:
 	if is_day_running:
 		_process_day_simulation(delta)
@@ -147,7 +154,8 @@ func _process(delta: float) -> void:
 func _process_day_simulation(delta: float) -> void:
 	day_timer += delta
 	
-	if day_timer >= DAY_DURATION:
+	# Check for day end condition
+	if day_timer >= DAY_DURATION or _should_end_day():
 		_end_day()
 		return
 		
@@ -155,6 +163,16 @@ func _process_day_simulation(delta: float) -> void:
 	if customer_spawn_timer >= _get_spawn_interval():
 		customer_spawn_timer = 0.0
 		_try_spawn_customer()
+
+func _should_end_day() -> bool:
+	# End day if we're out of stock and have no customers in queue
+	var all_out_of_stock = true
+	for tea_data in INITIAL_TEA_DATA:
+		if tea_data.unlocked and inventory_system.has_stock(tea_data.name):
+			all_out_of_stock = false
+			break
+	
+	return all_out_of_stock and (not customer_queue_instance or customer_queue_instance.get_queue_size() == 0)
 
 func _get_spawn_interval() -> float:
 	var base_interval = 2.0  # Reduced for more frequent spawns
@@ -246,6 +264,51 @@ func _calculate_satisfaction(customer: GameTypes.Customer) -> float:
 	
 	return clamp(base_satisfaction - queue_penalty + weather_bonus, 0.0, 1.0)
 
+func _end_day() -> void:
+	is_day_running = false
+	if start_day_button:
+		start_day_button.disabled = false
+	
+	# Calculate final stats
+	var avg_satisfaction = 0.0
+	if daily_stats.customers_served > 0:
+		avg_satisfaction = daily_stats.satisfaction_total / daily_stats.customers_served
+	
+	var final_stats = {
+		"revenue": daily_stats.revenue,
+		"costs": daily_stats.costs,
+		"profit": daily_stats.revenue - daily_stats.costs,
+		"customers_served": daily_stats.customers_served,
+		"customers_missed": daily_stats.customers_missed,
+		"satisfaction": avg_satisfaction,
+		"tea_sold": daily_stats.tea_sold.duplicate()
+	}
+	
+	# Format detailed end of day message
+	var day_summary = "Day %d Complete!\n" % GameState.current_day
+	day_summary += "Revenue: £%.2f\n" % final_stats.revenue
+	day_summary += "Costs: £%.2f\n" % final_stats.costs
+	day_summary += "Profit: £%.2f\n" % final_stats.profit
+	day_summary += "Customers Served: %d\n" % final_stats.customers_served
+	day_summary += "Customers Missed: %d\n" % final_stats.customers_missed
+	day_summary += "Average Satisfaction: %.1f%%\n" % avg_satisfaction
+	
+	# Add tea sales breakdown
+	day_summary += "Tea Sales:\n"
+	for tea_name in final_stats.tea_sold:
+		day_summary += "- %s: %d\n" % [tea_name, final_stats.tea_sold[tea_name]]
+	
+	print(day_summary)
+	
+	# Emit day ended signals
+	emit_signal("day_ended", final_stats)
+	Events.emit_signal("day_ended", GameState.current_day, final_stats)
+	
+	# Clean up
+	if customer_queue_instance:
+		customer_queue_instance.clear_queue()
+
+
 func _on_start_day() -> void:
 	if is_day_running:
 		return
@@ -271,61 +334,6 @@ func _on_start_day() -> void:
 	# Check for unlocks
 	_check_unlocks()
 
-func _end_day() -> void:
-	is_day_running = false
-	if start_day_button:
-		start_day_button.disabled = false
-	
-	# Calculate final stats
-	var avg_satisfaction = 0.0
-	if daily_stats.customers_served > 0:
-		avg_satisfaction = daily_stats.satisfaction_total / daily_stats.customers_served
-	
-	# Get detailed customer stats
-	var customer_stats = customer_demand.get_detailed_stats()
-
-	# Show end of day report
-	var report = """
-	Day %d Complete!
-	Revenue: £%.2f
-	Costs: £%.2f
-	Profit: £%.2f
-	Customers Served: %d
-	Customers Missed: %d
-	Average Satisfaction: %.1f%%
-
-	Missed Customer Details:
-	- Queue Full: %d
-	- Out of Stock: %d
-	- No Staff: %d
-	  
-	Tea Sales:
-	""" % [
-		GameState.current_day,
-		daily_stats.revenue,
-		daily_stats.costs,
-		daily_stats.revenue - daily_stats.costs,
-		daily_stats.customers_served,
-		daily_stats.customers_missed,
-		avg_satisfaction,
-		customer_stats.missed_details.too_busy,
-		customer_stats.missed_details.out_of_stock,
-		customer_stats.missed_details.no_staff
-	]
-	
-	# Add tea sales breakdown
-	for tea_name in daily_stats.tea_sold:
-		report += "- %s: %d\n" % [tea_name, daily_stats.tea_sold[tea_name]]
-	
-	print(report)
-
-	# Update game state
-	GameState.update_reputation(avg_satisfaction / 100.0)  # Convert back to 0-1 scale
-	
-	# Clean up
-	if customer_queue_instance:
-		customer_queue_instance.clear_queue()
-
 func _check_unlocks() -> void:
 	if GameState.current_day >= 3:  # Unlock Earl Grey
 		_unlock_tea("Earl Grey")
@@ -335,7 +343,7 @@ func _check_unlocks() -> void:
 func _unlock_tea(tea_name: String) -> void:
 	if not tea_grid:
 		return
-		
+	
 	for tea_card in tea_grid.get_children():
 		if tea_card.tea_data.name == tea_name and not tea_card.tea_data.unlocked:
 			var updated_data = tea_card.tea_data.duplicate()
@@ -379,6 +387,9 @@ func _update_ui() -> void:
 	if reputation_label:
 		reputation_label.text = str(GameState.reputation)
 
+func _on_save_game() -> void:
+	print("Save game functionality to be implemented")
+
 # Signal handlers
 func _on_customer_entered(customer_data) -> void:
 	print("Customer entered with tea preference: ", customer_data.tea_preference)
@@ -404,6 +415,3 @@ func _on_money_changed(new_amount: float) -> void:
 func _on_reputation_changed(new_value: int) -> void:
 	_update_ui()
 	_check_unlocks()
-
-func _on_save_game() -> void:
-	print("Save game functionality to be implemented")

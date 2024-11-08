@@ -92,22 +92,22 @@ class Customer:
 	var order_time: float = 0.0
 	var served: bool = false
 	
-	func _init(t: String, wait_time: float):
+	func _init(t: String, wait_time: float, preferred_tea: String = "Builder's Tea"):
 		type = t
 		max_wait_time = wait_time
+		tea_preference = preferred_tea  # Use the passed in preference
+		
+		# Set other attributes based on type
 		match type:
 			"regular":
 				budget = randf_range(4.0, 6.0)
 				patience = 1.0
-				tea_preference = "Builder's Tea"
 			"business":
 				budget = randf_range(7.0, 9.0)
 				patience = 0.8
-				tea_preference = "Earl Grey"
 			"connoisseur":
 				budget = randf_range(12.0, 18.0)
 				patience = 1.2
-				tea_preference = "Premium Blend"
 
 class DailyStats:
 	var day: int

@@ -1,11 +1,7 @@
-[gd_scene load_steps=7 format=3 uid="uid://bgnpeasn5ckbk"]
+[gd_scene load_steps=2 format=3 uid="uid://bgnpeasn5ckbk"]
 
 [ext_resource type="Script" path="res://scripts/ui/game_hud.gd" id="1_hud"]
 [ext_resource type="Theme" uid="uid://bsbuftenfm3cj" path="res://themes/tea_shop_theme.tres" id="2_theme"]
-[ext_resource type="PackedScene" path="res://scenes/customer_queue.tscn" id="3_queue"]
-[ext_resource type="PackedScene" path="res://scenes/inventory_panel.tscn" id="4_inventory"]
-[ext_resource type="PackedScene" path="res://scenes/phase_panel.tscn" id="5_phase"]
-[ext_resource type="PackedScene" uid="uid://duq40fp7tjgy" path="res://scenes/tea_card.tscn" id="6_tea"]
 
 [node name="GameHUD" type="Control"]
 layout_mode = 3
@@ -33,12 +29,6 @@ theme_override_constants/margin_bottom = 20
 layout_mode = 2
 theme_override_constants/separation = 20
 
-[node name="PhasePanel" parent="ContentContainer/VBoxContainer" instance=ExtResource("5_phase")]
-layout_mode = 2
-
-[node name="CustomerQueue" parent="ContentContainer/VBoxContainer" instance=ExtResource("3_queue")]
-layout_mode = 2
-
 [node name="MainContent" type="HBoxContainer" parent="ContentContainer/VBoxContainer"]
 layout_mode = 2
 size_flags_vertical = 3
@@ -48,71 +38,89 @@ theme_override_constants/separation = 20
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="Menu" type="MarginContainer" parent="ContentContainer/VBoxContainer/MainContent/TabContainer"]
+[node name="Reports" type="MarginContainer" parent="ContentContainer/VBoxContainer/MainContent/TabContainer"]
 layout_mode = 2
 theme_override_constants/margin_left = 10
 theme_override_constants/margin_top = 10
 theme_override_constants/margin_right = 10
 theme_override_constants/margin_bottom = 10
+metadata/_tab_name = "Reports"  # Add this line
 
-[node name="TeaGrid" type="GridContainer" parent="ContentContainer/VBoxContainer/MainContent/TabContainer/Menu"]
+[node name="ScrollContainer" type="ScrollContainer" parent="ContentContainer/VBoxContainer/MainContent/TabContainer/Reports"]
+layout_mode = 2
+
+[node name="StatsContainer" type="VBoxContainer" parent="ContentContainer/VBoxContainer/MainContent/TabContainer/Reports/ScrollContainer"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="KeyMetrics" type="GridContainer" parent="ContentContainer/VBoxContainer/MainContent/TabContainer/Reports/ScrollContainer/StatsContainer"]
 layout_mode = 2
 columns = 3
-# Tea cards will be added here dynamically
 
-[node name="Staff" type="MarginContainer" parent="ContentContainer/VBoxContainer/MainContent/TabContainer"]
-visible = false
-layout_mode = 2
-
-[node name="VBoxContainer" type="VBoxContainer" parent="ContentContainer/VBoxContainer/MainContent/TabContainer/Staff"]
-layout_mode = 2
-
-[node name="MorningShift" type="VBoxContainer" parent="ContentContainer/VBoxContainer/MainContent/TabContainer/Staff/VBoxContainer"]
-layout_mode = 2
-
-[node name="Label" type="Label" parent="ContentContainer/VBoxContainer/MainContent/TabContainer/Staff/VBoxContainer/MorningShift"]
-layout_mode = 2
-text = "Morning Shift"
-
-[node name="StaffGrid" type="GridContainer" parent="ContentContainer/VBoxContainer/MainContent/TabContainer/Staff/VBoxContainer/MorningShift"]
-layout_mode = 2
-columns = 2
-
-[node name="EveningShift" type="VBoxContainer" parent="ContentContainer/VBoxContainer/MainContent/TabContainer/Staff/VBoxContainer"]
-layout_mode = 2
-
-[node name="Label" type="Label" parent="ContentContainer/VBoxContainer/MainContent/TabContainer/Staff/VBoxContainer/EveningShift"]
-layout_mode = 2
-text = "Evening Shift"
-
-[node name="StaffGrid" type="GridContainer" parent="ContentContainer/VBoxContainer/MainContent/TabContainer/Staff/VBoxContainer/EveningShift"]
-layout_mode = 2
-columns = 2
-
-[node name="Reports" type="MarginContainer" parent="ContentContainer/VBoxContainer/MainContent/TabContainer"]
-visible = false
-layout_mode = 2
-
-[node name="StatsContainer" type="VBoxContainer" parent="ContentContainer/VBoxContainer/MainContent/TabContainer/Reports"]
-layout_mode = 2
-
-[node name="SidePanel" type="PanelContainer" parent="ContentContainer/VBoxContainer/MainContent"]
-custom_minimum_size = Vector2(250, 0)
-layout_mode = 2
-
-[node name="InventoryPanel" parent="ContentContainer/VBoxContainer/MainContent/SidePanel" instance=ExtResource("4_inventory")]
-layout_mode = 2
-
-[node name="ButtonContainer" type="HBoxContainer" parent="ContentContainer/VBoxContainer"]
-layout_mode = 2
-theme_override_constants/separation = 20
-
-[node name="StartDayButton" type="Button" parent="ContentContainer/VBoxContainer/ButtonContainer"]
+[node name="RevenueCard" type="PanelContainer" parent="ContentContainer/VBoxContainer/MainContent/TabContainer/Reports/ScrollContainer/StatsContainer/KeyMetrics"]
 layout_mode = 2
 size_flags_horizontal = 3
-text = "Start Day"
 
-[node name="SaveGameButton" type="Button" parent="ContentContainer/VBoxContainer/ButtonContainer"]
+[node name="VBox" type="VBoxContainer" parent="ContentContainer/VBoxContainer/MainContent/TabContainer/Reports/ScrollContainer/StatsContainer/KeyMetrics/RevenueCard"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="ContentContainer/VBoxContainer/MainContent/TabContainer/Reports/ScrollContainer/StatsContainer/KeyMetrics/RevenueCard/VBox"]
+layout_mode = 2
+text = "Revenue"
+
+[node name="Amount" type="Label" parent="ContentContainer/VBoxContainer/MainContent/TabContainer/Reports/ScrollContainer/StatsContainer/KeyMetrics/RevenueCard/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.2, 0.8, 0.2, 1)
+theme_override_font_sizes/font_size = 24
+text = "£0.00"
+
+[node name="CustomerCard" type="PanelContainer" parent="ContentContainer/VBoxContainer/MainContent/TabContainer/Reports/ScrollContainer/StatsContainer/KeyMetrics"]
 layout_mode = 2
 size_flags_horizontal = 3
-text = "Save Game"
+
+[node name="VBox" type="VBoxContainer" parent="ContentContainer/VBoxContainer/MainContent/TabContainer/Reports/ScrollContainer/StatsContainer/KeyMetrics/CustomerCard"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="ContentContainer/VBoxContainer/MainContent/TabContainer/Reports/ScrollContainer/StatsContainer/KeyMetrics/CustomerCard/VBox"]
+layout_mode = 2
+text = "Customers"
+
+[node name="Amount" type="Label" parent="ContentContainer/VBoxContainer/MainContent/TabContainer/Reports/ScrollContainer/StatsContainer/KeyMetrics/CustomerCard/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.2, 0.2, 0.8, 1)
+theme_override_font_sizes/font_size = 24
+text = "0"
+
+[node name="SatisfactionCard" type="PanelContainer" parent="ContentContainer/VBoxContainer/MainContent/TabContainer/Reports/ScrollContainer/StatsContainer/KeyMetrics"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="VBox" type="VBoxContainer" parent="ContentContainer/VBoxContainer/MainContent/TabContainer/Reports/ScrollContainer/StatsContainer/KeyMetrics/SatisfactionCard"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="ContentContainer/VBoxContainer/MainContent/TabContainer/Reports/ScrollContainer/StatsContainer/KeyMetrics/SatisfactionCard/VBox"]
+layout_mode = 2
+text = "Satisfaction"
+
+[node name="Amount" type="Label" parent="ContentContainer/VBoxContainer/MainContent/TabContainer/Reports/ScrollContainer/StatsContainer/KeyMetrics/SatisfactionCard/VBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.8, 0.2, 0.8, 1)
+theme_override_font_sizes/font_size = 24
+text = "0%"
+
+[node name="TeaSales" type="PanelContainer" parent="ContentContainer/VBoxContainer/MainContent/TabContainer/Reports/ScrollContainer/StatsContainer"]
+layout_mode = 2
+
+[node name="VBox" type="VBoxContainer" parent="ContentContainer/VBoxContainer/MainContent/TabContainer/Reports/ScrollContainer/StatsContainer/TeaSales"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="ContentContainer/VBoxContainer/MainContent/TabContainer/Reports/ScrollContainer/StatsContainer/TeaSales/VBox"]
+layout_mode = 2
+text = "Tea Sales"
+
+[node name="SalesList" type="VBoxContainer" parent="ContentContainer/VBoxContainer/MainContent/TabContainer/Reports/ScrollContainer/StatsContainer/TeaSales/VBox"]
+layout_mode = 2
+
+[node name="InventorySystem" type="Node" parent="."]
+
+[node name="CustomerDemand" type="Node" parent="."]
