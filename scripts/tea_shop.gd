@@ -8,6 +8,8 @@ extends Control
 @onready var save_button = $MarginContainer/MainLayout/ActionButtons/SaveButton
 @onready var money_label = $MarginContainer/MainLayout/TopBar/MoneyContainer/MoneyLabel
 @onready var reputation_label = $MarginContainer/MainLayout/TopBar/ReputationContainer/ReputationLabel
+@onready var phase_panel_scene = preload("res://scenes/phase_panel.tscn")
+@onready var phase_panel = null
 
 # Systems
 var inventory_system: InventorySystem
@@ -18,6 +20,14 @@ var customer_queue_instance: Node
 const DAY_DURATION = 180.0  # 3 minutes in seconds
 const MIN_CUSTOMERS_PER_DAY = 15
 const MAX_CUSTOMERS_PER_DAY = 30
+const PhasePanel = preload("res://scenes/phase_panel.tscn")
+
+# Game Phases
+enum GamePhase {
+	MORNING_PREP,
+	DAY_OPERATION,
+	EVENING_REVIEW
+}
 
 # Weather modifiers
 const WEATHER_MODIFIERS = {
@@ -80,6 +90,7 @@ func _ready() -> void:
 	_connect_signals()
 	
 	# Initial setup
+	_setup_phase_panel()
 	_setup_initial_tea_cards()
 	_setup_customer_queue()
 	_update_weather_display()
@@ -87,6 +98,15 @@ func _ready() -> void:
 	
 	# Initialize stats
 	daily_stats = _init_daily_stats()
+	
+func _setup_phase_panel() -> void:
+	phase_panel = phase_panel_scene.instantiate()
+	# Add it right after the DayContainer in the TopBar
+	var top_bar = $MarginContainer/MainLayout/TopBar
+	top_bar.add_child(phase_panel)
+	# Start at day 1
+	phase_panel.set_day(1)  # Changed from GameState.current_day
+	phase_panel.set_phase(GamePhase.MORNING_PREP)
 
 func _init_systems() -> void:
 	inventory_system = InventorySystem.new()
@@ -98,10 +118,21 @@ func _init_systems() -> void:
 		GameState.initialize()
 
 func _connect_signals() -> void:
+	# Existing connections
 	if start_day_button:
 		start_day_button.pressed.connect(_on_start_day)
 	if save_button:
 		save_button.pressed.connect(_on_save_game)
+		
+	# Add these connections
+	GameState.money_changed.connect(_on_money_changed)
+	GameState.reputation_changed.connect(_on_reputation_changed)
+	Events.tea_unlocked.connect(_on_tea_unlocked)
+	
+	# Connect to inventory system
+	if inventory_system:
+		inventory_system.stock_changed.connect(_on_stock_changed)
+		inventory_system.stock_depleted.connect(_on_stock_depleted)
 		
 	# Connect to Events autoload
 	Events.customer_entered.connect(_on_customer_entered)
@@ -308,11 +339,14 @@ func _end_day() -> void:
 	if customer_queue_instance:
 		customer_queue_instance.clear_queue()
 
-
 func _on_start_day() -> void:
 	if is_day_running:
 		return
 		
+	# Update game state
+	GameState.current_day += 1
+	GameState.update_weather()
+	
 	is_day_running = true
 	day_timer = 0.0
 	customer_spawn_timer = 0.0
@@ -322,17 +356,19 @@ func _on_start_day() -> void:
 	inventory_system.reset_daily_costs()
 	daily_stats = _init_daily_stats()
 	
-	# Update game state
-	GameState.current_day += 1
-	GameState.update_weather()
-	
 	# Update UI
 	_update_weather_display()
+	_update_ui()
+	
+	# Set phase to DAY_OPERATION
+	phase_panel.set_phase(GamePhase.DAY_OPERATION)
+	
 	if start_day_button:
 		start_day_button.disabled = true
 	
 	# Check for unlocks
 	_check_unlocks()
+
 
 func _check_unlocks() -> void:
 	if GameState.current_day >= 3:  # Unlock Earl Grey
@@ -386,6 +422,11 @@ func _update_ui() -> void:
 		money_label.text = "£%.2f" % GameState.money
 	if reputation_label:
 		reputation_label.text = str(GameState.reputation)
+		
+			# Add day label update
+	var day_label = $MarginContainer/MainLayout/TopBar/DayContainer/DayLabel
+	if day_label:
+		day_label.text = "Day %d" % GameState.current_day
 
 func _on_save_game() -> void:
 	print("Save game functionality to be implemented")
@@ -404,14 +445,30 @@ func _on_customer_missed(reason: int) -> void:
 	print("Customer missed, reason: ", reason)
 
 func _on_stock_changed(tea_name: String, amount: int) -> void:
-	print("Stock changed for %s: %d" % [tea_name, amount])
+	# Update the tea card display
+	if tea_grid:
+		for tea_card in tea_grid.get_children():
+			if tea_card.tea_data.name == tea_name:
+				var updated_data = tea_card.tea_data.duplicate()
+				updated_data["current_stock"] = amount
+				tea_card.setup(updated_data)
 
 func _on_stock_depleted(tea_name: String) -> void:
 	print("WARNING: %s stock depleted!" % tea_name)
 
 func _on_money_changed(new_amount: float) -> void:
-	_update_ui()
+	if money_label:
+		money_label.text = "£%.2f" % new_amount
 
 func _on_reputation_changed(new_value: int) -> void:
 	_update_ui()
 	_check_unlocks()
+	
+func _on_tea_unlocked(tea_name: String) -> void:
+	print("Tea unlocked: ", tea_name)
+	# Refresh the tea card display
+	for tea_card in tea_grid.get_children():
+		if tea_card.tea_data.name == tea_name:
+			var updated_data = tea_card.tea_data.duplicate()
+			updated_data.unlocked = true
+			tea_card.setup(updated_data)

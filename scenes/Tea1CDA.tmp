@@ -1,0 +1,158 @@
+[gd_scene load_steps=3 format=3 uid="uid://d4eft3rxoc47j"]
+
+[ext_resource type="Theme" uid="uid://bsbuftenfm3cj" path="res://themes/tea_shop_theme.tres" id="1_6s5vf"]
+[ext_resource type="Script" path="res://scripts/tea_shop.gd" id="2_6tob4"]
+
+[node name="TeaShop" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("1_6s5vf")
+script = ExtResource("2_6tob4")
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 16
+
+[node name="MainLayout" type="VBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="TopBar" type="HBoxContainer" parent="MarginContainer/MainLayout"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="DayContainer" type="HBoxContainer" parent="MarginContainer/MainLayout/TopBar"]
+layout_mode = 2
+
+[node name="DayLabel" type="Label" parent="MarginContainer/MainLayout/TopBar/DayContainer"]
+layout_mode = 2
+text = "Day 1"
+
+[node name="WeatherIcon" type="TextureRect" parent="MarginContainer/MainLayout/TopBar/DayContainer"]
+custom_minimum_size = Vector2(24, 24)
+layout_mode = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Spacer" type="Control" parent="MarginContainer/MainLayout/TopBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="MoneyContainer" type="HBoxContainer" parent="MarginContainer/MainLayout/TopBar"]
+layout_mode = 2
+
+[node name="MoneyIcon" type="TextureRect" parent="MarginContainer/MainLayout/TopBar/MoneyContainer"]
+custom_minimum_size = Vector2(24, 24)
+layout_mode = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="MoneyLabel" type="Label" parent="MarginContainer/MainLayout/TopBar/MoneyContainer"]
+layout_mode = 2
+text = "£1000.00"
+
+[node name="ReputationContainer" type="HBoxContainer" parent="MarginContainer/MainLayout/TopBar"]
+layout_mode = 2
+
+[node name="StarIcon" type="TextureRect" parent="MarginContainer/MainLayout/TopBar/ReputationContainer"]
+custom_minimum_size = Vector2(24, 24)
+layout_mode = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="ReputationLabel" type="Label" parent="MarginContainer/MainLayout/TopBar/ReputationContainer"]
+layout_mode = 2
+text = "3"
+
+[node name="AlertPanel" type="PanelContainer" parent="MarginContainer/MainLayout"]
+layout_mode = 2
+
+[node name="AlertLabel" type="Label" parent="MarginContainer/MainLayout/AlertPanel"]
+layout_mode = 2
+text = "☀️ Sunny day! Expect 30% more customers today."
+horizontal_alignment = 1
+
+[node name="TabContainer" type="TabContainer" parent="MarginContainer/MainLayout"]
+layout_mode = 2
+size_flags_vertical = 3
+current_tab = 0
+
+[node name="Menu" type="MarginContainer" parent="MarginContainer/MainLayout/TabContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_bottom = 8
+metadata/_tab_index = 0
+
+[node name="GridContainer" type="GridContainer" parent="MarginContainer/MainLayout/TabContainer/Menu"]
+layout_mode = 2
+theme_override_constants/h_separation = 16
+theme_override_constants/v_separation = 16
+columns = 3
+
+[node name="Staff" type="MarginContainer" parent="MarginContainer/MainLayout/TabContainer"]
+visible = false
+layout_mode = 2
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_bottom = 8
+metadata/_tab_index = 1
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/MainLayout/TabContainer/Staff"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="MorningShift" type="VBoxContainer" parent="MarginContainer/MainLayout/TabContainer/Staff/VBoxContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="MarginContainer/MainLayout/TabContainer/Staff/VBoxContainer/MorningShift"]
+layout_mode = 2
+text = "Morning Shift"
+
+[node name="EveningShift" type="VBoxContainer" parent="MarginContainer/MainLayout/TabContainer/Staff/VBoxContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="MarginContainer/MainLayout/TabContainer/Staff/VBoxContainer/EveningShift"]
+layout_mode = 2
+text = "Evening Shift"
+
+[node name="Reports" type="MarginContainer" parent="MarginContainer/MainLayout/TabContainer"]
+visible = false
+layout_mode = 2
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_bottom = 8
+metadata/_tab_index = 2
+
+[node name="StatsContainer" type="GridContainer" parent="MarginContainer/MainLayout/TabContainer/Reports"]
+layout_mode = 2
+columns = 3
+
+[node name="ActionButtons" type="HBoxContainer" parent="MarginContainer/MainLayout"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="StartDayButton" type="Button" parent="MarginContainer/MainLayout/ActionButtons"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Start Day"
+
+[node name="SaveButton" type="Button" parent="MarginContainer/MainLayout/ActionButtons"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Save Game"

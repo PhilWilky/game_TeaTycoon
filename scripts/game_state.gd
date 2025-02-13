@@ -24,7 +24,7 @@ func initialize() -> void:
 		return
 		
 	is_initialized = true
-	current_day = 1
+	current_day = 0
 	money = 1000.0
 	reputation = 3
 	current_weather = "sunny"

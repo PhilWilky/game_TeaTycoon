@@ -44,3 +44,20 @@ func update_display() -> void:
 	
 	# Update visual state
 	modulate = Color(1, 1, 1, 1.0 if tea_data.unlocked else 0.5)
+	
+	# Clean up any existing stock labels by their name
+	var existing_labels = []
+	for child in $MarginContainer/VBoxContainer.get_children():
+		if child.name.begins_with("StockLabel"):
+			existing_labels.append(child)
+	
+	for label in existing_labels:
+		label.queue_free()
+	
+	# Add new stock display
+	if tea_data.has("current_stock"):
+		var stock_label = Label.new()
+		stock_label.name = "StockLabel_" + str(tea_data.current_stock)  # Unique name
+		stock_label.text = "Stock: %d" % tea_data.current_stock
+		stock_label.add_theme_color_override("font_color", Color(0.4, 0.4, 0.4, 1))
+		$MarginContainer/VBoxContainer.add_child(stock_label)

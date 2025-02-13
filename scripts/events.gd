@@ -29,7 +29,6 @@ signal preparation_phase_started
 signal preparation_phase_completed
 signal show_notification(title: String, message: String, type: String)
 signal stats_updated(stats_data: Dictionary)
-
 # Weather signals
 signal weather_changed(new_weather: String, modifiers: Dictionary)
 
