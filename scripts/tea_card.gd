@@ -1,87 +1,70 @@
 extends PanelContainer
 
 var tea_data: Dictionary
-var update_pending = false
+var stock_label: Label
+
+func _ready():
+	stock_label = Label.new()
+	stock_label.name = "StockLabel"
+	stock_label.add_theme_color_override("font_color", Color(0.4, 0.4, 0.4, 1))
+	stock_label.custom_minimum_size = Vector2(0, 24)  # Fixed height to prevent layout shifts
+	stock_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	$MarginContainer/VBoxContainer.add_child(stock_label)
 
 func setup(data: Dictionary) -> void:
-	var changed = false
+	tea_data = data.duplicate()
 	
-	# Only trigger update if data has actually changed
-	if !tea_data.hash() == data.hash():
-		tea_data = data.duplicate()
-		changed = true
-	
-	if changed:
-		_request_update()
+	# Add current_stock to tea_data if it's not there
+	if tea_data.get("unlocked", false) and not tea_data.has("current_stock"):
+		tea_data["current_stock"] = 20  # Default starting stock
+		
+	update_display()
 
-func _request_update() -> void:
-	if !update_pending:
-		update_pending = true
-		call_deferred("_perform_update")
-
-func _perform_update() -> void:
-	if !update_pending:
+func update_display() -> void:
+	if not tea_data:
 		return
 		
-	# Update name
-	$MarginContainer/VBoxContainer/Header/NameLabel.text = tea_data.name
-	
-	# Update costs
-	$MarginContainer/VBoxContainer/Costs/CostLabel.text = "Cost: £%.2f" % tea_data.cost
-	$MarginContainer/VBoxContainer/Costs/PriceLabel.text = "Price: £%.2f" % tea_data.price
-	
-	# Update quality stars
-	var stars = $MarginContainer/VBoxContainer/QualityContainer/Stars
-	var existing_stars = stars.get_child_count()
-	var needed_stars = 5
-	
-	# Only update stars if needed
-	if existing_stars != needed_stars:
-		for child in stars.get_children():
-			child.queue_free()
-			
-		for i in range(5):
-			var star = Label.new()
-			star.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-			star.custom_minimum_size = Vector2(16, 16)
-			if i < tea_data.quality:
-				star.text = "★"
-				star.add_theme_color_override("font_color", Color(1, 0.8, 0, 1))
-			else:
-				star.text = "☆"
-				star.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5, 1))
-			stars.add_child(star)
+	# Basic info updates
+	$MarginContainer/VBoxContainer/Header/NameLabel.text = tea_data.get("name", "")
+	$MarginContainer/VBoxContainer/Costs/CostLabel.text = "Cost: £%.2f" % tea_data.get("cost", 0.0)
+	$MarginContainer/VBoxContainer/Costs/PriceLabel.text = "Price: £%.2f" % tea_data.get("price", 0.0)
 	
 	# Update satisfaction
-	$MarginContainer/VBoxContainer/SatisfactionLabel.text = "Customer Satisfaction: %d%%" % tea_data.satisfaction
+	$MarginContainer/VBoxContainer/SatisfactionLabel.text = "Customer Satisfaction: %d%%" % tea_data.get("satisfaction", 0)
 	
 	# Update unlock info
 	var unlock_info = $MarginContainer/VBoxContainer/UnlockInfo
-	unlock_info.visible = !tea_data.unlocked
-	if !tea_data.unlocked and tea_data.has("unlock_condition"):
-		unlock_info.text = tea_data.unlock_condition
-	
-	# Update visual state
-	modulate = Color(1, 1, 1, 1.0 if tea_data.unlocked else 0.5)
+	if !tea_data.get("unlocked", false) and tea_data.has("unlock_condition"):
+		unlock_info.text = tea_data["unlock_condition"]
+	unlock_info.visible = !tea_data.get("unlocked", false)
 	
 	# Update stock display
-	var stock_label = null
-	for child in $MarginContainer/VBoxContainer.get_children():
-		if child.name.begins_with("StockLabel"):
-			stock_label = child
-			break
+	if tea_data.get("unlocked", false):
+		stock_label.show()
+		var current_stock = tea_data.get("current_stock", 0)
+		stock_label.text = "Stock: %d" % current_stock
+		
+		# Color coding for stock levels
+		var stock_color = Color(0.4, 0.4, 0.4, 1)  # Default gray
+		if current_stock <= 5:
+			stock_color = Color(0.8, 0.2, 0.2, 1)  # Red for low stock
+		stock_label.add_theme_color_override("font_color", stock_color)
+	else:
+		stock_label.hide()
 	
-	if tea_data.has("current_stock"):
-		if !stock_label:
-			stock_label = Label.new()
-			stock_label.name = "StockLabel"
-			stock_label.add_theme_color_override("font_color", Color(0.4, 0.4, 0.4, 1))
-			$MarginContainer/VBoxContainer.add_child(stock_label)
-		stock_label.text = "Stock: %d" % tea_data.current_stock
-	elif stock_label:
-		stock_label.queue_free()
-	
-	update_pending = false
+	# Update visual state
+	modulate = Color(1, 1, 1, 1.0 if tea_data.get("unlocked", false) else 0.5)
 
-func update_display() -> void:
-	_request_update()
+func update_stock(amount: int) -> void:
+	if tea_data:
+		tea_data["current_stock"] = amount
+		# Only show stock for unlocked teas
+		if tea_data.get("unlocked", false):
+			stock_label.show()
+			stock_label.text = "Stock: %d" % amount
+			var stock_color = Color(0.4, 0.4, 0.4, 1)
+			if amount <= 5:
+				stock_color = Color(0.8, 0.2, 0.2, 1)
+			stock_label.add_theme_color_override("font_color", stock_color)
+		else:
+			stock_label.hide()
