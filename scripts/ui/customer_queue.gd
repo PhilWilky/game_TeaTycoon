@@ -4,67 +4,71 @@ extends PanelContainer
 @onready var queue_count = $MarginContainer/VBoxContainer/Header/QueueCount
 
 const MAX_QUEUE_SIZE = 5
-const EMPTY_COLOR = Color(0.5, 0.5, 0.5, 0.3)  # Light gray, mostly transparent
-const OCCUPIED_COLOR = Color(0.4, 0.6, 1.0, 1.0)  # Bright blue, fully opaque
+const EMPTY_COLOR = Color(0.5, 0.5, 0.5, 0.3)
+const OCCUPIED_COLOR = Color(0.4, 0.6, 1.0, 1.0)
 
 var current_queue = []
-var empty_slots = []
+var slot_nodes = []
+var update_pending = false
 
 func _ready():
-	# Create empty slots
 	_create_empty_slots()
 	update_display()
 
 func _create_empty_slots():
-	# Clear any existing slots
 	for child in queue_display.get_children():
 		child.queue_free()
 	
-	# Create new empty slots
-	empty_slots.clear()
+	slot_nodes.clear()
 	for i in range(MAX_QUEUE_SIZE):
 		var slot = PanelContainer.new()
 		slot.custom_minimum_size = Vector2(40, 40)
 		slot.add_theme_stylebox_override("panel", get_theme_stylebox("panel"))
-		slot.modulate = EMPTY_COLOR  # Start with empty color
+		slot.modulate = EMPTY_COLOR
 		queue_display.add_child(slot)
-		empty_slots.append(slot)
+		slot_nodes.append(slot)
 
 func add_customer() -> bool:
 	if current_queue.size() >= MAX_QUEUE_SIZE:
 		return false
 	
-	# Find first empty slot
-	for i in range(MAX_QUEUE_SIZE):
-		if i >= empty_slots.size():
-			break
-			
-		if empty_slots[i].modulate.a < 1.0:  # Check if slot is empty
-			var customer_slot = empty_slots[i]
-			customer_slot.modulate = OCCUPIED_COLOR  # Make slot bright blue
-			current_queue.append(customer_slot)
-			update_display()
-			print("Customer added to slot: ", i)
-			return true
-	
-	return false
+	current_queue.append(true)
+	_request_update()
+	return true
 
 func remove_customer() -> void:
 	if current_queue.size() > 0:
-		var customer_slot = current_queue.pop_front()
-		customer_slot.modulate = EMPTY_COLOR  # Make slot gray and transparent
-		update_display()
-		print("Customer removed, queue size: ", current_queue.size())
+		current_queue.pop_front()
+		_request_update()
+
+func _request_update() -> void:
+	if !update_pending:
+		update_pending = true
+		call_deferred("_perform_update")
+
+func _perform_update() -> void:
+	if !update_pending:
+		return
+		
+	# Update slot visuals
+	for i in range(slot_nodes.size()):
+		var should_be_occupied = i < current_queue.size()
+		var is_occupied = slot_nodes[i].modulate.a > 0.5
+		
+		if should_be_occupied != is_occupied:
+			slot_nodes[i].modulate = OCCUPIED_COLOR if should_be_occupied else EMPTY_COLOR
+	
+	# Update counter
+	queue_count.text = "%d/%d" % [current_queue.size(), MAX_QUEUE_SIZE]
+	
+	update_pending = false
 
 func update_display() -> void:
-	queue_count.text = "%d/%d" % [current_queue.size(), MAX_QUEUE_SIZE]
+	_request_update()
 
 func clear_queue() -> void:
-	for slot in empty_slots:
-		slot.modulate = EMPTY_COLOR
 	current_queue.clear()
-	update_display()
-	print("Queue cleared")
+	_request_update()
 
 func get_queue_size() -> int:
 	return current_queue.size()
