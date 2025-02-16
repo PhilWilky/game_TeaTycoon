@@ -7,10 +7,14 @@ signal stock_purchased(tea_name: String, amount: int, total_cost: float)
 @onready var restock_button = $MarginContainer/VBoxContainer/RestockButton
 @onready var low_stock_warning = $MarginContainer/VBoxContainer/LowStockWarning
 @onready var total_cost_label = $MarginContainer/VBoxContainer/TotalCost/Amount
+@onready var milk_container = VBoxContainer.new()
+@onready var milk_stock_label = Label.new()
+@onready var milk_purchase_spinner = SpinBox.new()
 
 var inventory_system: InventorySystem
 var tea_manager = TeaManager  # Direct reference
 var tea_rows = {}
+var milk_system: MilkSystem  # Add this line
 
 func _ready() -> void:
 	print("Stock Management: Ready")
@@ -20,19 +24,26 @@ func _ready() -> void:
 	
 	restock_button.pressed.connect(_on_restock_pressed)
 	restock_button.disabled = false  # Enable for testing
-
+	
 	# Initial tea row creation
 	call_deferred("_create_tea_rows")
 
-func setup(inventory: InventorySystem) -> void:
+func setup(inventory: InventorySystem, milk: MilkSystem) -> void:
 	print("Stock Management: Setup with inventory system")
 	inventory_system = inventory
-	_create_tea_rows()  # Create again in case setup happens after _ready
+	milk_system = milk  # Add this line
+	_create_tea_rows()
 	_update_stock_display()
+	_setup_milk_ui()  # Move this here
 	
 	inventory_system.stock_changed.connect(_on_stock_changed)
 	inventory_system.stock_depleted.connect(_on_stock_depleted)
 	inventory_system.restock_needed.connect(_on_restock_needed)
+	
+	if milk_system:
+		milk_system.milk_stock_changed.connect(_on_milk_stock_changed)
+
+
 
 func _create_tea_rows() -> void:
 	print("Creating tea rows for:", tea_manager.unlocked_teas)
@@ -112,12 +123,12 @@ func _update_stock_display() -> void:
 
 func _on_restock_value_changed(_value: float) -> void:
 	_update_stock_display()
-
+	
 func _on_restock_pressed() -> void:
 	var total_cost = 0.0
 	var purchases = {}
 	
-	# Calculate total cost and collect purchases
+	# Calculate tea costs
 	for tea_name in tea_rows:
 		var row = tea_rows[tea_name]
 		var amount = row.get_node("RestockAmount").value
@@ -131,15 +142,20 @@ func _on_restock_pressed() -> void:
 				"actual": actual_restock
 			}
 	
-	# Check if we can afford it
+	# Add milk cost
+	var milk_amount = milk_purchase_spinner.value
+	if milk_amount > 0:
+		total_cost += milk_system.MILK_COST * milk_amount
+	
+	# Check if we can afford everything
 	if total_cost > GameState.money:
 		Events.emit_signal("show_notification", "Cannot Afford", "Not enough money for restock!", "error")
 		return
 	
+	# Process tea purchases
 	var partial_restock = false
 	var restock_message = ""
 	
-	# Process all purchases
 	for tea_name in purchases:
 		var requested = purchases[tea_name].requested
 		var actual = purchases[tea_name].actual
@@ -152,6 +168,11 @@ func _on_restock_pressed() -> void:
 		
 		# Reset spinner
 		tea_rows[tea_name].get_node("RestockAmount").value = 0
+	
+	# Process milk purchase
+	if milk_amount > 0:
+		milk_system.purchase_milk(milk_amount)
+		milk_purchase_spinner.value = 0
 	
 	# Deduct total cost
 	GameState.spend_money(total_cost)
@@ -168,6 +189,67 @@ func _on_restock_pressed() -> void:
 			"success")
 	
 	_update_stock_display()
+
+func _setup_milk_ui():
+	# Create milk management section
+	var milk_section = PanelContainer.new()
+	milk_section.add_theme_stylebox_override("panel", get_theme_stylebox("panel"))
+	
+	milk_container.add_theme_constant_override("separation", 8)
+	
+	var header = Label.new()
+	header.text = "Fresh Milk Stock"
+	header.add_theme_font_size_override("font_size", 16)
+	milk_container.add_child(header)
+	
+	var info_container = HBoxContainer.new()
+	info_container.add_theme_constant_override("separation", 16)
+	
+	milk_stock_label.text = "Current Stock: 0 cups"
+	info_container.add_child(milk_stock_label)
+	
+	var cost_label = Label.new()
+	cost_label.text = "Cost: £1.50/unit (10 cups)"
+	info_container.add_child(cost_label)
+	
+	milk_container.add_child(info_container)
+	
+	var purchase_container = HBoxContainer.new()
+	purchase_container.add_theme_constant_override("separation", 16)
+	
+	var purchase_label = Label.new()
+	purchase_label.text = "Purchase Units:"
+	purchase_container.add_child(purchase_label)
+	
+	milk_purchase_spinner.min_value = 0
+	milk_purchase_spinner.max_value = 20
+	milk_purchase_spinner.step = 1
+	milk_purchase_spinner.value = 5
+	purchase_container.add_child(milk_purchase_spinner)
+	
+	milk_container.add_child(purchase_container)
+	
+	milk_section.add_child(milk_container)
+	
+	# Add to main container before the restock button
+	$MarginContainer/VBoxContainer.add_child(milk_section)
+	$MarginContainer/VBoxContainer.move_child(milk_section, $MarginContainer/VBoxContainer.get_child_count() - 2)
+
+func update_milk_display(cups_remaining: int):
+	milk_stock_label.text = "Current Stock: %d cups" % cups_remaining
+
+func _on_milk_stock_changed(cups_remaining: int):
+	update_milk_display(cups_remaining)
+
+func _on_milk_depleted():
+	low_stock_warning.show()
+	low_stock_warning.text = "Warning: Out of milk!"
+
+func _on_milk_spoiled(amount_lost: float):
+	Events.emit_signal("show_notification", 
+		"Milk Spoiled", 
+		"%.1f units of milk spoiled overnight!" % amount_lost,
+		"warning")
 
 func _on_tea_unlocked(tea_name: String) -> void:
 	_create_tea_rows()  # Recreate all rows to include the new tea

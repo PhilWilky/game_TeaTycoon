@@ -15,6 +15,7 @@ extends Control
 var inventory_system: InventorySystem
 var customer_demand: CustomerDemand
 var customer_queue_instance: Node
+@onready var milk_system: MilkSystem
 
 # Game Constants
 const DAY_DURATION = 180.0  # 3 minutes in seconds
@@ -86,11 +87,10 @@ func _ready() -> void:
 	_init_systems()
 	_connect_signals()
 	
-	# Add debugging for inventory panel
 	if $MarginContainer/MainLayout/TabContainer/Inventory/InventoryPanel:
 		print("Found inventory panel, setting up...")
 		var panel = $MarginContainer/MainLayout/TabContainer/Inventory/InventoryPanel
-		panel.setup(inventory_system)
+		panel.setup(inventory_system, milk_system)
 	else:
 		print("ERROR: Could not find inventory panel")
 	
@@ -105,7 +105,11 @@ func _ready() -> void:
 func _init_systems() -> void:
 	print("TeaShop: Initializing game systems...")
 	inventory_system = InventorySystem.new()
-	add_child(inventory_system)  # Add to scene tree
+	add_child(inventory_system)
+	
+	milk_system = MilkSystem.new()
+	add_child(milk_system)
+	
 	customer_demand = CustomerDemand.new()
 	customer_demand.setup(inventory_system)
 	
@@ -116,17 +120,14 @@ func _init_systems() -> void:
 func _connect_signals() -> void:
 	print("TeaShop: Connecting signals...")
 	
-	# UI Button signals
 	if start_day_button:
 		start_day_button.pressed.connect(_on_start_day)
 	if save_button:
 		save_button.pressed.connect(_on_save_game)
 	
-	# Game State signals    
 	GameState.money_changed.connect(_on_money_changed)
 	GameState.reputation_changed.connect(_on_reputation_changed)
 	
-	# Event signals
 	Events.tea_unlocked.connect(_on_tea_unlocked)
 	Events.customer_entered.connect(_on_customer_entered)
 	Events.customer_left.connect(_on_customer_left)
@@ -134,7 +135,6 @@ func _connect_signals() -> void:
 	Events.money_changed.connect(_on_money_changed)
 	Events.reputation_changed.connect(_on_reputation_changed)
 	
-	# System signals
 	if customer_demand:
 		customer_demand.customer_missed.connect(_on_customer_missed)
 	if inventory_system:
@@ -159,7 +159,7 @@ func _setup_initial_tea_cards() -> void:
 	if not tea_grid:
 		push_error("Tea grid node not found!")
 		return
-		
+	
 	var tea_card_scene = preload("res://scenes/tea_card.tscn")
 	
 	for tea_data in INITIAL_TEA_DATA:
@@ -180,7 +180,7 @@ func _process_day_simulation(delta: float) -> void:
 	if day_timer >= DAY_DURATION or _should_end_day():
 		_end_day()
 		return
-		
+	
 	customer_spawn_timer += delta
 	if customer_spawn_timer >= _get_spawn_interval():
 		customer_spawn_timer = 0.0
@@ -204,15 +204,14 @@ func _get_spawn_interval() -> float:
 func _try_spawn_customer() -> void:
 	if not customer_queue_instance:
 		return
-		
+	
 	if customer_queue_instance.is_full():
 		_process_missed_customer(CustomerDemand.MissReason.TOO_BUSY)
 		return
 	
-	# Apply reputation modifier to customer spawn chance
-	var reputation_modifier = 0.5 + (GameState.reputation * 0.1)  # Base 50% + 10% per reputation star
+	var reputation_modifier = 0.5 + (GameState.reputation * 0.1)
 	if randf() > reputation_modifier:
-		return  # Customer decided not to visit due to poor reputation
+		return
 	
 	var customer = GameTypes.Customer.new(_get_random_customer_type(), 30.0)
 	var tea_data = _get_tea_data(customer.tea_preference)
@@ -230,10 +229,15 @@ func _try_spawn_customer() -> void:
 func _process_customer_order(customer: GameTypes.Customer) -> void:
 	if not customer_queue_instance or not is_day_running:
 		return
-		
+	
 	var tea_data = _get_tea_data(customer.tea_preference)
 	
-	# Check if we still have stock
+	# First check if we have milk (since all customers want milk)
+	if not milk_system.use_milk():
+		_process_missed_customer(CustomerDemand.MissReason.NO_MILK)
+		return
+	
+	# Check if we still have tea stock
 	if not inventory_system.has_stock(customer.tea_preference):
 		_process_missed_customer(CustomerDemand.MissReason.OUT_OF_STOCK)
 		return
@@ -243,7 +247,6 @@ func _process_customer_order(customer: GameTypes.Customer) -> void:
 		var satisfaction = _calculate_satisfaction(customer)
 		var revenue = tea_data.price
 		
-		# Update stats
 		daily_stats.revenue += revenue
 		daily_stats.costs += tea_data.cost
 		daily_stats.satisfaction_total += satisfaction * 100
@@ -264,14 +267,12 @@ func _process_customer_order(customer: GameTypes.Customer) -> void:
 	else:
 		_process_missed_customer(CustomerDemand.MissReason.OUT_OF_STOCK)
 	
-	# Always remove the customer from queue
 	customer_queue_instance.remove_customer()
 	_update_ui()
 
 func _process_missed_customer(reason: CustomerDemand.MissReason) -> void:
 	daily_stats.customers_missed += 1
 	
-	# Apply satisfaction penalty for missed customers
 	match reason:
 		CustomerDemand.MissReason.TOO_BUSY:
 			daily_stats.satisfaction_total -= 20.0
@@ -282,10 +283,13 @@ func _process_missed_customer(reason: CustomerDemand.MissReason) -> void:
 		CustomerDemand.MissReason.NO_TEA_TYPE:
 			daily_stats.satisfaction_total -= 10.0
 			print("Customer missed - Tea not unlocked")
+		CustomerDemand.MissReason.NO_MILK:
+			daily_stats.satisfaction_total -= 40.0
+			GameState.reputation = max(GameState.reputation - 1, 1)
+			print("Customer missed - No milk available")
 	
 	Events.emit_signal("customer_missed", reason)
 	
-	# Remove customer from queue if they're in it
 	if customer_queue_instance and reason != CustomerDemand.MissReason.TOO_BUSY:
 		customer_queue_instance.remove_customer()
 
@@ -293,7 +297,7 @@ func _calculate_satisfaction(customer: GameTypes.Customer) -> float:
 	var tea_data = _get_tea_data(customer.tea_preference)
 	if not tea_data:
 		return 0.0
-		
+	
 	var base_satisfaction = float(tea_data.satisfaction) / 100.0
 	
 	var queue_penalty = 0.0
@@ -326,6 +330,10 @@ func _calculate_satisfaction(customer: GameTypes.Customer) -> float:
 func _end_day() -> void:
 	print("TeaShop: Ending day...")
 	is_day_running = false
+	
+	# Handle milk spoilage at end of day
+	milk_system.end_day()
+	
 	if start_day_button:
 		start_day_button.disabled = false
 	
@@ -429,7 +437,7 @@ func _init_daily_stats() -> Dictionary:
 func _update_weather_display() -> void:
 	if not weather_label:
 		return
-		
+	
 	match GameState.current_weather:
 		"sunny":
 			weather_label.text = "☀️ Sunny day! Expect 30% more customers today."
@@ -446,19 +454,16 @@ func _update_ui() -> void:
 	if reputation_label:
 		reputation_label.text = str(GameState.reputation)
 	
-	# Update day display
 	var day_label = $MarginContainer/MainLayout/TopBar/DayContainer/DayLabel
 	if day_label:
 		day_label.text = "Day %d" % GameState.current_day
 	
-	# Update inventory display
 	if tea_grid:
 		for tea_card in tea_grid.get_children():
 			if tea_card.tea_data:
 				var current_stock = inventory_system.get_stock(tea_card.tea_data.get("name", ""))
 				tea_card.update_stock(current_stock)
 	
-	# Update customer queue display
 	if customer_queue_instance:
 		customer_queue_instance.update_display()
 

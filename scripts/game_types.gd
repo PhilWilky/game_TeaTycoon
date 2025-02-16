@@ -21,6 +21,14 @@ const TEA_COMPONENTS = {
 	}
 }
 
+enum MissReason {
+	NO_TEA_TYPE,      # Tea not unlocked yet
+	OUT_OF_STOCK,     # Run out of tea
+	NO_STAFF,         # No staff available
+	TOO_BUSY,         # Queue full
+	NO_MILK           # Out of milk
+}
+
 class TeaItem:
 	var name: String
 	var cost: float
@@ -91,11 +99,13 @@ class Customer:
 	var satisfaction: float = 0.0
 	var order_time: float = 0.0
 	var served: bool = false
+	var wants_milk: bool = true  # Since this is an English tea shop, default to true
 	
 	func _init(t: String, wait_time: float, preferred_tea: String = "Builder's Tea"):
 		type = t
 		max_wait_time = wait_time
-		tea_preference = preferred_tea  # Use the passed in preference
+		tea_preference = preferred_tea
+		wants_milk = true  # All customers want milk in this implementation
 		
 		# Set other attributes based on type
 		match type:

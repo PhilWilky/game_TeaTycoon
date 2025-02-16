@@ -2,11 +2,13 @@
 class_name CustomerDemand
 extends Node
 
+# At the top of customer_demand.gd
 enum MissReason {
 	NO_TEA_TYPE,      # Tea not unlocked yet
 	OUT_OF_STOCK,     # Run out of tea
 	NO_STAFF,         # No staff available
-	TOO_BUSY          # Queue full
+	TOO_BUSY,         # Queue full
+	NO_MILK           # Out of milk
 }
 
 signal customer_missed(reason: MissReason)
