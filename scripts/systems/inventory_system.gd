@@ -45,15 +45,25 @@ func use_tea(tea_name: String) -> bool:
 	return true
 
 func restock_tea(tea_name: String, amount: int) -> void:
+	print("Attempting to restock %s with %d units" % [tea_name, amount])
 	if tea_name not in inventory:
+		print("Warning: Attempting to restock non-existent tea: ", tea_name)
 		return
 		
 	var space_available = inventory[tea_name].max - inventory[tea_name].current
 	var actual_restock = min(amount, space_available)
 	
+	if actual_restock < amount:
+		# Only charge for what we actually restocked
+		var actual_cost = actual_restock * _get_tea_cost(tea_name)
+		daily_costs += actual_cost
+		print("Can only restock %d units due to capacity. Charging for actual amount: £%.2f" % [actual_restock, actual_cost])
+	else:
+		daily_costs += amount * _get_tea_cost(tea_name)
+	
 	inventory[tea_name].current += actual_restock
-	daily_costs += actual_restock * _get_tea_cost(tea_name)
 	emit_signal("stock_changed", tea_name, inventory[tea_name].current)
+	print("Restocked %s. New amount: %d" % [tea_name, inventory[tea_name].current])
 
 func reset_daily_costs() -> void:
 	daily_costs = 0.0

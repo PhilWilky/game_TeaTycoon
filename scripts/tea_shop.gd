@@ -85,6 +85,15 @@ func _ready() -> void:
 	print("TeaShop: Initializing...")
 	_init_systems()
 	_connect_signals()
+	
+	# Add debugging for inventory panel
+	if $MarginContainer/MainLayout/TabContainer/Inventory/InventoryPanel:
+		print("Found inventory panel, setting up...")
+		var panel = $MarginContainer/MainLayout/TabContainer/Inventory/InventoryPanel
+		panel.setup(inventory_system)
+	else:
+		print("ERROR: Could not find inventory panel")
+	
 	_setup_phase_panel()
 	_setup_initial_tea_cards()
 	_setup_customer_queue()
@@ -96,6 +105,7 @@ func _ready() -> void:
 func _init_systems() -> void:
 	print("TeaShop: Initializing game systems...")
 	inventory_system = InventorySystem.new()
+	add_child(inventory_system)  # Add to scene tree
 	customer_demand = CustomerDemand.new()
 	customer_demand.setup(inventory_system)
 	
