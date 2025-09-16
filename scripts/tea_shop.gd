@@ -1,5 +1,6 @@
 # tea_shop.gd
 extends Control
+const TabNotificationSystem = preload("res://scripts/ui/tab_notification_system.gd")
 
 # Scene References
 @onready var tea_grid = $MarginContainer/MainLayout/TabContainer/Menu/GridContainer
@@ -18,6 +19,7 @@ var inventory_system: InventorySystem
 var milk_system: MilkSystem
 var customer_queue_instance: Node
 var phase_panel: Node
+var tab_notification_system: TabNotificationSystem
 
 # Managers
 var phase_manager: PhaseManager
@@ -61,6 +63,10 @@ func _ready() -> void:
 	_init_managers()
 	_connect_signals()
 	_setup_ui()
+	
+		# Enable input processing for debug shortcuts
+	set_process_unhandled_input(true)
+
 	print("TeaShop: Initialization complete")
 
 func _init_systems() -> void:
@@ -99,15 +105,18 @@ func _init_managers() -> void:
 	add_child(tea_production_manager)
 	tea_production_manager.setup(inventory_system, milk_system)
 	
-	# Create and setup PhaseManager
+	# Create PhaseManager first
 	phase_manager = PhaseManager.new()
 	add_child(phase_manager)
-	phase_manager.setup(inventory_system, null, milk_system)  # CustomerDemand will be deprecated
+	phase_manager.setup(inventory_system, null, milk_system)  # Setup without CustomerManager first
 	
-	# Create and setup CustomerManager
+	# Create CustomerManager and connect it to PhaseManager
 	customer_manager = CustomerManager.new()
 	add_child(customer_manager)
 	customer_manager.setup(phase_manager, inventory_system, milk_system, customer_queue_instance)
+	
+	# Now update PhaseManager with CustomerManager reference
+	phase_manager.customer_manager = customer_manager
 	
 	print("TeaShop: Managers initialized")
 
@@ -119,6 +128,11 @@ func _setup_ui() -> void:
 	top_bar.add_child(phase_panel)
 	phase_panel.set_day(GameState.current_day)
 	
+		# Initialize tab notification system
+	var tab_container = $MarginContainer/MainLayout/TabContainer
+	if tab_container:
+		tab_notification_system = TabNotificationSystem.new(tab_container)
+
 	# Setup tea cards
 	_setup_initial_tea_cards()
 	
@@ -128,6 +142,9 @@ func _setup_ui() -> void:
 		var panel = $MarginContainer/MainLayout/TabContainer/Inventory/InventoryPanel
 		panel.setup(inventory_system, milk_system, phase_manager)
 	
+	# Initialize empty reports tab with placeholder
+	_populate_evening_reports({})
+
 	_update_weather_display()
 	_update_ui()
 	
@@ -266,7 +283,92 @@ func _on_day_started(day: int) -> void:
 		phase_panel.set_day(day)
 
 func _on_day_ended(_day: int, stats: Dictionary) -> void:
+	print("TeaShop: Day ended with stats:", stats)
+	
+	# Use notification system to switch to Reports tab with indicator
+	var reports_tab = $MarginContainer/MainLayout/TabContainer/Reports
+	if tab_notification_system and reports_tab:
+		tab_notification_system.switch_to_tab_with_notification(reports_tab)
+	
+	# Create reports content
+	_populate_evening_reports(stats)
 	_update_ui()
+
+func _populate_evening_reports(stats: Dictionary) -> void:
+	var reports_tab = $MarginContainer/MainLayout/TabContainer/Reports
+	if not reports_tab:
+		return
+	
+	# Clear existing content
+	for child in reports_tab.get_children():
+		child.queue_free()
+	
+	# Show placeholder if day is in progress
+	if phase_manager and phase_manager.get_current_phase() == PhaseManager.Phase.DAY_OPERATION:
+		_show_reports_placeholder(reports_tab)
+		return
+	
+	# Show actual reports if we have stats
+	if stats.is_empty():
+		_show_reports_placeholder(reports_tab)
+		return
+	
+	# Create scroll container for reports
+	var scroll = ScrollContainer.new()
+	scroll.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	reports_tab.add_child(scroll)
+	
+	var content = VBoxContainer.new()
+	content.add_theme_constant_override("separation", 20)
+	scroll.add_child(content)
+	
+	# Day header
+	var header = Label.new()
+	header.text = "Day %d Results" % stats.day
+	header.add_theme_font_size_override("font_size", 24)
+	header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	content.add_child(header)
+	
+	# Key metrics panel
+	_create_metrics_panel(content, stats)
+	
+	# Customer breakdown
+	_create_customer_panel(content, stats)
+	
+	# Financial summary
+	_create_financial_panel(content, stats)
+	
+	# Future multipliers panel
+	_create_multipliers_panel(content, stats)
+
+
+func _create_multipliers_panel(parent: VBoxContainer, stats: Dictionary) -> void:
+	var panel = PanelContainer.new()
+	var vbox = VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 8)
+	
+	var title = Label.new()
+	title.text = "Business Modifiers"
+	title.add_theme_font_size_override("font_size", 18)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(title)
+	
+	# TODO placeholders for future systems
+	var todo_items = [
+		"Staff Efficiency: Coming Soon",
+		"Location Bonuses: Coming Soon", 
+		"Advertising Effects: Coming Soon",
+		"Equipment Upgrades: Coming Soon"
+	]
+	
+	for item in todo_items:
+		var label = Label.new()
+		label.text = "• " + item
+		label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
+		vbox.add_child(label)
+	
+	panel.add_child(vbox)
+	parent.add_child(panel)
 
 func _on_customer_served(customer_data: Dictionary, satisfaction: float) -> void:
 	print("Customer served with satisfaction: %.1f%%" % (satisfaction * 100))
@@ -330,3 +432,175 @@ func _on_tea_preparation_failed(tea_name: String, reason: String) -> void:
 		"Preparation Failed",
 		"Could not prepare %s: %s" % [tea_name, reason],
 		"error")
+
+func _create_metrics_panel(parent: VBoxContainer, stats: Dictionary) -> void:
+	var panel = PanelContainer.new()
+	var vbox = VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 10)
+	
+	var title = Label.new()
+	title.text = "Key Metrics"
+	title.add_theme_font_size_override("font_size", 18)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(title)
+	
+	# Weather display
+	var weather_container = HBoxContainer.new()
+	var weather_label = Label.new()
+	weather_label.text = "Weather: "
+	var weather_value = Label.new()
+	
+	match stats.get("weather", "sunny"):
+		"sunny": weather_value.text = "☀️ Sunny"
+		"rainy": weather_value.text = "🌧️ Rainy"
+		"cold": weather_value.text = "❄️ Cold"
+		"hot": weather_value.text = "🌡️ Hot"
+		_: weather_value.text = "Unknown"
+	
+	weather_container.add_child(weather_label)
+	weather_container.add_child(weather_value)
+	vbox.add_child(weather_container)
+	
+	# Create metrics grid
+	var grid = GridContainer.new()
+	grid.columns = 4
+	grid.add_theme_constant_override("h_separation", 20)
+	grid.add_theme_constant_override("v_separation", 10)
+	
+	# Revenue
+	var revenue_label = Label.new()
+	revenue_label.text = "Revenue"
+	var revenue_value = Label.new()
+	revenue_value.text = "£%.2f" % stats.get("revenue", 0.0)
+	revenue_value.add_theme_color_override("font_color", Color.GREEN)
+	
+	# Customers Served
+	var customers_label = Label.new()
+	customers_label.text = "Served"
+	var customers_value = Label.new()
+	customers_value.text = str(stats.get("customers_served", 0))
+	
+	# Customers Missed
+	var missed_label = Label.new()
+	missed_label.text = "Missed" 
+	var missed_value = Label.new()
+	missed_value.text = str(stats.get("customers_missed", 0))
+	missed_value.add_theme_color_override("font_color", Color.RED)
+	
+	# Satisfaction
+	var satisfaction_label = Label.new()
+	satisfaction_label.text = "Satisfaction"
+	var satisfaction_value = Label.new()
+	satisfaction_value.text = "%.1f%%" % (stats.get("satisfaction_avg", 0.0) * 100)
+	
+	grid.add_child(revenue_label)
+	grid.add_child(customers_label)
+	grid.add_child(missed_label) 
+	grid.add_child(satisfaction_label)
+	grid.add_child(revenue_value)
+	grid.add_child(customers_value)
+	grid.add_child(missed_value)
+	grid.add_child(satisfaction_value)
+	
+	vbox.add_child(grid)
+	panel.add_child(vbox)
+	parent.add_child(panel)
+
+func _create_customer_panel(parent: VBoxContainer, stats: Dictionary) -> void:
+	var panel = PanelContainer.new()
+	var vbox = VBoxContainer.new()
+	
+	var title = Label.new()
+	title.text = "Customer Breakdown"
+	title.add_theme_font_size_override("font_size", 18)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(title)
+	
+	var tea_sold = stats.get("tea_sold", {})
+	for tea_name in tea_sold:
+		var hbox = HBoxContainer.new()
+		var name_label = Label.new()
+		name_label.text = tea_name
+		name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		
+		var count_label = Label.new()
+		count_label.text = str(tea_sold[tea_name])
+		count_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		
+		hbox.add_child(name_label)
+		hbox.add_child(count_label)
+		vbox.add_child(hbox)
+	
+	panel.add_child(vbox)
+	parent.add_child(panel)
+
+func _create_financial_panel(parent: VBoxContainer, stats: Dictionary) -> void:
+	var panel = PanelContainer.new()
+	var vbox = VBoxContainer.new()
+	
+	var title = Label.new()
+	title.text = "Financial Summary"
+	title.add_theme_font_size_override("font_size", 18)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(title)
+	
+	# Profit calculation
+	var revenue = stats.get("revenue", 0.0)
+	var costs = inventory_system.daily_costs if inventory_system else 0.0
+	var profit = revenue - costs
+	
+	var profit_hbox = HBoxContainer.new()
+	var profit_label = Label.new()
+	profit_label.text = "Profit:"
+	profit_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	
+	var profit_value = Label.new()
+	profit_value.text = "£%.2f" % profit
+	profit_value.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	profit_value.add_theme_color_override("font_color", Color.GREEN if profit > 0 else Color.RED)
+	
+	profit_hbox.add_child(profit_label)
+	profit_hbox.add_child(profit_value)
+	vbox.add_child(profit_hbox)
+	
+	panel.add_child(vbox)
+	parent.add_child(panel)
+	
+func _unhandled_input(event: InputEvent) -> void:
+	# Debug shortcut: Press 'E' to end day early
+	if event is InputEventKey and event.pressed:
+		if event.keycode == KEY_E:
+			if phase_manager and phase_manager.get_current_phase() == PhaseManager.Phase.DAY_OPERATION:
+				print("DEBUG: Ending day early via shortcut")
+				phase_manager.end_day()
+				get_viewport().set_input_as_handled()
+		# Add this new shortcut
+		elif event.keycode == KEY_S:
+			print("DEBUG: Printing cumulative stats")
+			GameState.print_cumulative_stats()
+			get_viewport().set_input_as_handled()
+
+func _show_reports_placeholder(reports_tab: Control) -> void:
+	var placeholder = VBoxContainer.new()
+	placeholder.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	placeholder.add_theme_constant_override("separation", 16)
+	
+	var icon = Label.new()
+	icon.text = "📊"
+	icon.add_theme_font_size_override("font_size", 48)
+	icon.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	placeholder.add_child(icon)
+	
+	var title = Label.new()
+	title.text = "Daily Reports"
+	title.add_theme_font_size_override("font_size", 24)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	placeholder.add_child(title)
+	
+	var message = Label.new()
+	message.text = "Reports will be available at the end of the day\nduring tomorrow's preparation phase."
+	message.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	message.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
+	placeholder.add_child(message)
+	
+	reports_tab.add_child(placeholder)

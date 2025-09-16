@@ -19,6 +19,16 @@ var current_day_satisfaction: float = 0.0
 var total_customers_today: int = 0
 var satisfied_customers_today: int = 0
 
+var cumulative_stats = {
+	"total_customers_served": 0,
+	"total_customers_missed": 0,
+	"total_days_played": 0,
+	"total_revenue": 0.0,
+	"best_daily_profit": 0.0,
+	"perfect_days": 0,  # Days with 0 missed customers
+	"tea_types_unlocked": 1  # Start with Builder's Tea
+}
+
 func initialize() -> void:
 	if is_initialized:
 		return
@@ -106,3 +116,27 @@ func reset_daily_revenue() -> void:
 func update_weather() -> void:
 	var weather_types = ["sunny", "rainy", "cold", "hot"]
 	current_weather = weather_types[randi() % weather_types.size()]
+
+func update_cumulative_stats(daily_stats: Dictionary) -> void:
+	cumulative_stats.total_customers_served += daily_stats.get("customers_served", 0)
+	cumulative_stats.total_customers_missed += daily_stats.get("customers_missed", 0) 
+	cumulative_stats.total_days_played += 1
+	cumulative_stats.total_revenue += daily_stats.get("revenue", 0.0)
+	
+	var daily_profit = daily_stats.get("profit", 0.0)
+	if daily_profit > cumulative_stats.best_daily_profit:
+		cumulative_stats.best_daily_profit = daily_profit
+	
+	if daily_stats.get("customers_missed", 0) == 0:
+		cumulative_stats.perfect_days += 1
+
+func print_cumulative_stats() -> void:
+	print("=== CUMULATIVE STATISTICS ===")
+	print("Total Days Played: ", cumulative_stats.total_days_played)
+	print("Total Customers Served: ", cumulative_stats.total_customers_served)
+	print("Total Customers Missed: ", cumulative_stats.total_customers_missed)
+	print("Total Revenue: £%.2f" % cumulative_stats.total_revenue)
+	print("Best Daily Profit: £%.2f" % cumulative_stats.best_daily_profit)
+	print("Perfect Days: ", cumulative_stats.perfect_days)
+	print("Tea Types Unlocked: ", cumulative_stats.tea_types_unlocked)
+	print("==============================")

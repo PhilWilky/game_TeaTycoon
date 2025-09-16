@@ -14,6 +14,10 @@ var inventory_system: InventorySystem
 var milk_system: MilkSystem
 var customer_queue_instance: Node
 var is_active: bool = false
+var customers_served_today: int = 0
+var customers_missed_today: int = 0
+var total_satisfaction_today: float = 0.0
+var tea_sold_today: Dictionary = {}
 
 func _ready() -> void:
 	print("CustomerManager: Ready")
@@ -59,6 +63,7 @@ func _try_spawn_customer() -> void:
 	print("CustomerManager: Attempting to spawn customer")
 	if not customer_queue_instance or customer_queue_instance.is_full():
 		emit_signal("customer_missed", CustomerDemand.MissReason.TOO_BUSY)
+		customers_missed_today += 1
 		return
 	
 	var customer = GameTypes.Customer.new(_get_random_customer_type(), 30.0)
@@ -74,6 +79,7 @@ func _try_spawn_customer() -> void:
 			CustomerDemand.MissReason.NO_TEA_TYPE if not TeaManager.is_tea_unlocked(customer.tea_preference)
 			else CustomerDemand.MissReason.OUT_OF_STOCK
 		)
+		customers_missed_today += 1
 
 func _process_customer_order(customer: GameTypes.Customer) -> void:
 	if not is_active:
@@ -86,6 +92,7 @@ func _process_customer_order(customer: GameTypes.Customer) -> void:
 	if not milk_system.use_milk():
 		print("CustomerManager: No milk available!")
 		emit_signal("customer_missed", CustomerDemand.MissReason.NO_MILK)
+		customers_missed_today += 1
 		customer_queue_instance.remove_customer()
 		return
 	else:
@@ -94,6 +101,7 @@ func _process_customer_order(customer: GameTypes.Customer) -> void:
 	# Check tea availability
 	if not inventory_system.has_stock(customer.tea_preference):
 		emit_signal("customer_missed", CustomerDemand.MissReason.OUT_OF_STOCK)
+		customers_missed_today += 1
 		customer_queue_instance.remove_customer()
 		return
 	
@@ -105,16 +113,26 @@ func _process_customer_order(customer: GameTypes.Customer) -> void:
 		
 		GameState.add_money(revenue)
 		
+		# after successful serving
 		emit_signal("customer_served", {
 			"type": customer.type,
 			"tea": customer.tea_preference,
 			"satisfaction": satisfaction,
 			"revenue": revenue
 		}, satisfaction)
+
+		# Add tracking
+		customers_served_today += 1
+		total_satisfaction_today += satisfaction
+		if not tea_sold_today.has(customer.tea_preference):
+			tea_sold_today[customer.tea_preference] = 0
+		tea_sold_today[customer.tea_preference] += 1
+
 		
 		print("CustomerManager: Customer served - Revenue: £%.2f, Satisfaction: %.1f%%" % [revenue, satisfaction * 100])
 	else:
 		emit_signal("customer_missed", CustomerDemand.MissReason.OUT_OF_STOCK)
+		customers_missed_today += 1
 	
 	customer_queue_instance.remove_customer()
 
@@ -157,9 +175,15 @@ func _on_day_started(_day: int) -> void:
 	print("CustomerManager: Day started")
 	is_active = true
 	customer_spawn_timer = 0.0
+	
+	# Reset daily tracking
+	customers_served_today = 0
+	customers_missed_today = 0
+	total_satisfaction_today = 0.0
+	tea_sold_today.clear()
 
 func _on_day_ended(_day: int, _stats: Dictionary) -> void:
-	print("CustomerManager: Day ended")
+	print("CustomerManager: Day ended - Served: %d, Missed: %d" % [customers_served_today, customers_missed_today])
 	is_active = false
 	if customer_queue_instance:
 		customer_queue_instance.clear_queue()

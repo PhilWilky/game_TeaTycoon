@@ -21,14 +21,16 @@ var is_day_running: bool = false
 # System references
 var inventory_system: InventorySystem
 var milk_system: MilkSystem
+var customer_manager: CustomerManager
 
 func _ready() -> void:
 	print("PhaseManager: Ready")
 
-func setup(inventory: InventorySystem, _customer_demand, milk: MilkSystem) -> void:
+func setup(inventory: InventorySystem, _customer_demand, milk: MilkSystem, c_manager: CustomerManager = null) -> void:
 	print("PhaseManager: Setting up with dependencies")
 	inventory_system = inventory
 	milk_system = milk
+	customer_manager = c_manager
 
 func _process(delta: float) -> void:
 	if current_phase == Phase.DAY_OPERATION and is_day_running:
@@ -59,12 +61,45 @@ func end_day() -> void:
 	current_phase = Phase.EVENING_REVIEW
 	day_timer = 0.0
 	
+	# Collect comprehensive day statistics
+	var day_stats = {
+		"day": GameState.current_day,
+		"revenue": GameState.daily_revenue,
+		"customers_served": 0,  # Will be populated by customer manager
+		"customers_missed": 0,  # Will be populated by customer manager  
+		"tea_sold": {},
+		"milk_used": 0.0,
+		"satisfaction_avg": 0.0,
+		"weather": GameState.current_weather,
+		"starting_stock": {},
+		"ending_stock": {},
+		"profit": 0.0
+	}
+	
+	# Get customer data
+	if customer_manager:
+		day_stats.customers_served = customer_manager.customers_served_today
+		day_stats.customers_missed = customer_manager.customers_missed_today
+		day_stats.tea_sold = customer_manager.tea_sold_today.duplicate()
+		if customer_manager.customers_served_today > 0:
+			day_stats.satisfaction_avg = customer_manager.total_satisfaction_today / customer_manager.customers_served_today
+	
+	# Get inventory data
+	if inventory_system:
+		for tea_name in TeaManager.unlocked_teas:
+			day_stats.ending_stock[tea_name] = inventory_system.get_stock(tea_name)
+		day_stats.profit = GameState.daily_revenue - inventory_system.daily_costs
+	
 	emit_signal("phase_changed", Phase.EVENING_REVIEW)
-	emit_signal("day_ended", GameState.current_day, {})
+	emit_signal("day_ended", GameState.current_day, day_stats)
+	
+	# Update cumulative statistics
+	GameState.update_cumulative_stats(day_stats)
+
 	print("PhaseManager: Day %d ended" % GameState.current_day)
 	
-	# Auto-transition to morning prep after 3 seconds
-	await get_tree().create_timer(3.0).timeout
+	# Auto-transition to morning prep after 5 seconds (longer for reading reports)
+	await get_tree().create_timer(5.0).timeout
 	start_morning_prep()
 
 func start_morning_prep() -> void:
