@@ -72,6 +72,10 @@ func _init_systems() -> void:
 	milk_system = MilkSystem.new()
 	add_child(milk_system)
 	
+	print("TeaShop: Attempting to purchase starting milk...")
+	var cost = milk_system.purchase_milk(10)  # Start with 10 units (100 cups)
+	print("TeaShop: Milk purchase result - Cost: £%.2f, Stock: %.1f units" % [cost, milk_system.get_current_stock()])
+	
 	# Create customer queue first so it exists for the managers
 	customer_queue_instance = customer_queue_scene.instantiate()
 	$MarginContainer/MainLayout.add_child(customer_queue_instance)
@@ -109,12 +113,11 @@ func _init_managers() -> void:
 
 func _setup_ui() -> void:
 	print("TeaShop: Setting up UI...")
-	
 	# Setup phase panel
 	phase_panel = phase_panel_scene.instantiate()
 	var top_bar = $MarginContainer/MainLayout/TopBar
 	top_bar.add_child(phase_panel)
-	phase_panel.set_day(1)
+	phase_panel.set_day(GameState.current_day)
 	
 	# Setup tea cards
 	_setup_initial_tea_cards()
@@ -123,7 +126,7 @@ func _setup_ui() -> void:
 	if $MarginContainer/MainLayout/TabContainer/Inventory/InventoryPanel:
 		print("Found inventory panel, setting up...")
 		var panel = $MarginContainer/MainLayout/TabContainer/Inventory/InventoryPanel
-		panel.setup(inventory_system, milk_system)
+		panel.setup(inventory_system, milk_system, phase_manager)
 	
 	_update_weather_display()
 	_update_ui()
@@ -246,14 +249,21 @@ func _on_phase_changed(new_phase: int) -> void:
 		PhaseManager.Phase.MORNING_PREP:
 			if start_day_button:
 				start_day_button.disabled = false
+				start_day_button.text = "Start Day %d" % (GameState.current_day + 1)
 		PhaseManager.Phase.DAY_OPERATION:
 			if start_day_button:
 				start_day_button.disabled = true
+				start_day_button.text = "Day In Progress"
+		PhaseManager.Phase.EVENING_REVIEW:
+			if start_day_button:
+				start_day_button.text = "Reviewing Day..."
 
 func _on_day_started(day: int) -> void:
 	_check_unlocks()
 	_update_weather_display()
 	_update_ui()
+	if phase_panel:
+		phase_panel.set_day(day)
 
 func _on_day_ended(_day: int, stats: Dictionary) -> void:
 	_update_ui()

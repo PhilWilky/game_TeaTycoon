@@ -62,11 +62,22 @@ func end_day() -> void:
 	emit_signal("phase_changed", Phase.EVENING_REVIEW)
 	emit_signal("day_ended", GameState.current_day, {})
 	print("PhaseManager: Day %d ended" % GameState.current_day)
+	
+	# Auto-transition to morning prep after 3 seconds
+	await get_tree().create_timer(3.0).timeout
+	start_morning_prep()
 
 func start_morning_prep() -> void:
-	print("PhaseManager: Starting morning prep")
+	print("PhaseManager: Starting morning prep for next day")
 	current_phase = Phase.MORNING_PREP
+	
+	# Reset daily systems
+	if milk_system:
+		milk_system.end_day()  # Spoil yesterday's milk
+	
+	# Don't increment day here - that happens in start_day()
 	emit_signal("phase_changed", Phase.MORNING_PREP)
+	print("PhaseManager: Ready for Day %d preparation" % (GameState.current_day + 1))
 
 func get_current_phase() -> int:
 	return current_phase

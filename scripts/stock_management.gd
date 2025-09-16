@@ -14,7 +14,8 @@ signal stock_purchased(tea_name: String, amount: int, total_cost: float)
 var inventory_system: InventorySystem
 var tea_manager = TeaManager  # Direct reference
 var tea_rows = {}
-var milk_system: MilkSystem  # Add this line
+var milk_system: MilkSystem
+var phase_manager: PhaseManager
 
 func _ready() -> void:
 	print("Stock Management: Ready")
@@ -28,13 +29,14 @@ func _ready() -> void:
 	# Initial tea row creation
 	call_deferred("_create_tea_rows")
 
-func setup(inventory: InventorySystem, milk: MilkSystem) -> void:
+func setup(inventory: InventorySystem, milk: MilkSystem, p_manager: PhaseManager = null) -> void:
 	print("Stock Management: Setup with inventory system")
 	inventory_system = inventory
-	milk_system = milk  # Add this line
+	milk_system = milk
+	phase_manager = p_manager
 	_create_tea_rows()
 	_update_stock_display()
-	_setup_milk_ui()  # Move this here
+	_setup_milk_ui()
 	
 	inventory_system.stock_changed.connect(_on_stock_changed)
 	inventory_system.stock_depleted.connect(_on_stock_depleted)
@@ -125,6 +127,11 @@ func _on_restock_value_changed(_value: float) -> void:
 	_update_stock_display()
 	
 func _on_restock_pressed() -> void:
+	# Block restocking during day operation
+	if phase_manager and phase_manager.get_current_phase() == PhaseManager.Phase.DAY_OPERATION:
+		Events.emit_signal("show_notification", "Cannot Restock", "Restocking is only available during morning preparation!", "warning")
+		return
+
 	var total_cost = 0.0
 	var purchases = {}
 	

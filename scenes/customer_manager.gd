@@ -42,16 +42,15 @@ func _process(delta: float) -> void:
 
 func _get_spawn_interval() -> float:
 	# Base interval randomly between 1 and 4 seconds
-	# Reduced customer frequency for better game balance
-	var base_interval = randf_range(3.0, 7.0)  # Changed from 1.0-4.0
+	var base_interval = randf_range(1.0, 4.0)
 	
 	# Weather affects how likely people are to want tea
 	var weather_mod = 1.0
 	match GameState.current_weather:
-		"sunny": weather_mod = 0.8  # Changed from 0.7
-		"rainy": weather_mod = 1.3  # Changed from 1.2
-		"cold": weather_mod = 1.0   # Changed from 0.8
-		"hot": weather_mod = 1.4    # Changed from 1.3
+		"sunny": weather_mod = 0.7  # More customers on sunny days
+		"rainy": weather_mod = 1.2  # Fewer customers on rainy days
+		"cold": weather_mod = 0.8   # More customers wanting hot tea
+		"hot": weather_mod = 1.3    # Fewer customers on hot days
 	
 	return base_interval * weather_mod
 
@@ -82,14 +81,10 @@ func _process_customer_order(customer: GameTypes.Customer) -> void:
 	print("CustomerManager: Processing order for ", customer.tea_preference)
 	
 	# Check milk availability
-	print("CustomerManager: Checking milk availability... Current stock: %.1f units" % milk_system.get_current_stock())
 	if not milk_system.use_milk():
-		print("CustomerManager: No milk available!")
 		emit_signal("customer_missed", CustomerDemand.MissReason.NO_MILK)
 		customer_queue_instance.remove_customer()
 		return
-	else:
-		print("CustomerManager: Milk used successfully. Remaining: %.1f units" % milk_system.get_current_stock())
 	
 	# Check tea availability
 	if not inventory_system.has_stock(customer.tea_preference):
