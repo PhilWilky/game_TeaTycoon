@@ -57,6 +57,12 @@ func start_day() -> void:
 
 func end_day() -> void:
 	print("PhaseManager: Ending day")
+	
+	# DEBUG does the customer manager  
+	print("Customer manager exists: ", customer_manager != null)
+	if customer_manager:
+		print("Customer manager properties accessible: ", customer_manager.customers_served_today)
+		
 	is_day_running = false
 	current_phase = Phase.EVENING_REVIEW
 	day_timer = 0.0

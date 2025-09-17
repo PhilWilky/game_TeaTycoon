@@ -20,6 +20,8 @@ func _init():
 func reset_stock() -> void:
 	current_milk_stock = 0.0
 	milk_used_today = 0.0
+	emit_signal("milk_stock_changed", get_cups_remaining())  # Emit signal when resetting
+	emit_signal("milk_depleted")  # Always emit depleted signal when resetting to 0
 
 func purchase_milk(units: int) -> float:
 	if units < MILK_MIN_ORDER:

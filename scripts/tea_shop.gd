@@ -78,10 +78,6 @@ func _init_systems() -> void:
 	milk_system = MilkSystem.new()
 	add_child(milk_system)
 	
-	print("TeaShop: Attempting to purchase starting milk...")
-	var cost = milk_system.purchase_milk(10)  # Start with 10 units (100 cups)
-	print("TeaShop: Milk purchase result - Cost: £%.2f, Stock: %.1f units" % [cost, milk_system.get_current_stock()])
-	
 	# Create customer queue first so it exists for the managers
 	customer_queue_instance = customer_queue_scene.instantiate()
 	$MarginContainer/MainLayout.add_child(customer_queue_instance)

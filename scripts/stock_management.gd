@@ -42,10 +42,14 @@ func setup(inventory: InventorySystem, milk: MilkSystem, p_manager: PhaseManager
 	inventory_system.stock_depleted.connect(_on_stock_depleted)
 	inventory_system.restock_needed.connect(_on_restock_needed)
 	
+	# Check if we start with no milk and show warning immediately
+	if milk_system and milk_system.get_cups_remaining() == 0:
+		_on_milk_depleted()
+	
 	if milk_system:
 		milk_system.milk_stock_changed.connect(_on_milk_stock_changed)
-
-
+		milk_system.milk_spoiled.connect(_on_milk_spoiled)
+		milk_system.milk_depleted.connect(_on_milk_depleted)
 
 func _create_tea_rows() -> void:
 	print("Creating tea rows for:", tea_manager.unlocked_teas)
@@ -247,6 +251,10 @@ func update_milk_display(cups_remaining: int):
 
 func _on_milk_stock_changed(cups_remaining: int):
 	update_milk_display(cups_remaining)
+	
+	# Hide the warning if we now have milk
+	if cups_remaining > 0:
+		low_stock_warning.hide()
 
 func _on_milk_depleted():
 	low_stock_warning.show()
@@ -257,6 +265,8 @@ func _on_milk_spoiled(amount_lost: float):
 		"Milk Spoiled", 
 		"%.1f units of milk spoiled overnight!" % amount_lost,
 		"warning")
+		
+	update_milk_display(0)
 
 func _on_tea_unlocked(tea_name: String) -> void:
 	_create_tea_rows()  # Recreate all rows to include the new tea
