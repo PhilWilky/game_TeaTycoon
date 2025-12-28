@@ -19,6 +19,21 @@ var customers_missed_today: int = 0
 var total_satisfaction_today: float = 0.0
 var tea_sold_today: Dictionary = {}
 
+# Customer cap system
+var base_customers_per_day: int = 60 # Hook for upgrades/marketing
+var customer_variance: int = 10 # ±10 customers randomness
+var max_customers_per_day: int = 60 # Calculated each day
+var customers_spawned_today: int = 0 # Daily counter
+
+# Phase 1.5: Wave system
+enum WaveState {RUSH, QUIET}
+var current_wave_state: WaveState = WaveState.RUSH
+var wave_timer: float = 0.0
+var current_wave_duration: float = 0.0
+# Wave spawn rates (calculated dynamically in _on_day_started)
+var rush_spawn_rate: float = 2.0
+var quiet_spawn_rate: float = 4.5
+
 func _ready() -> void:
 	print("CustomerManager: Ready")
 
@@ -38,28 +53,54 @@ func setup(p_manager: PhaseManager, inventory: InventorySystem, milk: MilkSystem
 func _process(delta: float) -> void:
 	if not is_active:
 		return
-		
+	
+	# Update wave timer
+	wave_timer += delta
+	if wave_timer >= current_wave_duration:
+		_switch_wave()
+	
+	# Spawn customers based on current wave
 	customer_spawn_timer += delta
 	if customer_spawn_timer >= _get_spawn_interval():
 		customer_spawn_timer = 0.0
 		_try_spawn_customer()
 
 func _get_spawn_interval() -> float:
-	# Base interval randomly between 1 and 4 seconds
-	# Reduced customer frequency for better game balance
-	var base_interval = randf_range(1.5, 3.5) # Faster customer flow
+	# Use wave-based spawn rate
+	var base_interval = rush_spawn_rate if current_wave_state == WaveState.RUSH else quiet_spawn_rate
 	
-	# Weather affects how likely people are to want tea
+	# Add slight randomness (±20%)
+	var randomness = base_interval * 0.2
+	base_interval = randf_range(base_interval - randomness, base_interval + randomness)
+	
+	# Weather still affects spawn rate
 	var weather_mod = 1.0
 	match GameState.current_weather:
-		"sunny": weather_mod = 0.8 # Changed from 0.7
-		"rainy": weather_mod = 1.3 # Changed from 1.2
-		"cold": weather_mod = 1.0 # Changed from 0.8
-		"hot": weather_mod = 1.4 # Changed from 1.3
+		"sunny": weather_mod = 0.8
+		"rainy": weather_mod = 1.3
+		"cold": weather_mod = 1.0
+		"hot": weather_mod = 1.4
 	
 	return base_interval * weather_mod
 
+func _switch_wave() -> void:
+	# Toggle between rush and quiet
+	if current_wave_state == WaveState.RUSH:
+		current_wave_state = WaveState.QUIET
+		current_wave_duration = randf_range(20.0, 40.0) # Quiet period: 20-40 seconds
+		print("CustomerManager: Wave switched to QUIET (%.1fs)" % current_wave_duration)
+	else:
+		current_wave_state = WaveState.RUSH
+		current_wave_duration = randf_range(30.0, 50.0) # Rush period: 30-50 seconds
+		print("CustomerManager: Wave switched to RUSH (%.1fs)" % current_wave_duration)
+	
+	wave_timer = 0.0
+
 func _try_spawn_customer() -> void:
+	# Check if we've hit the daily customer cap
+	if customers_spawned_today >= max_customers_per_day:
+		return # Stop spawning for the day
+	
 	print("CustomerManager: Attempting to spawn customer")
 	if not customer_queue_instance or customer_queue_instance.is_full():
 		emit_signal("customer_missed", CustomerDemand.MissReason.TOO_BUSY)
@@ -71,9 +112,11 @@ func _try_spawn_customer() -> void:
 	
 	if TeaManager.is_tea_unlocked(customer.tea_preference) and inventory_system.has_stock(customer.tea_preference):
 		if customer_queue_instance.add_customer():
-			print("CustomerManager: Customer added to queue")
+			customers_spawned_today += 1
+			print("CustomerManager: Customer added to queue (spawned: %d/%d)" % [customers_spawned_today, max_customers_per_day])
 			var timer = get_tree().create_timer(randf_range(3.0, 5.0))
 			timer.timeout.connect(_process_customer_order.bind(customer))
+
 	else:
 		emit_signal("customer_missed",
 			CustomerDemand.MissReason.NO_TEA_TYPE if not TeaManager.is_tea_unlocked(customer.tea_preference)
@@ -180,11 +223,32 @@ func _on_day_started(_day: int) -> void:
 	is_active = true
 	customer_spawn_timer = 0.0
 	
+# Calculate daily customer cap with variance
+	max_customers_per_day = base_customers_per_day + randi_range(-customer_variance, customer_variance)
+	print("CustomerManager: Today's customer cap: %d" % max_customers_per_day)
+	
+	# Calculate wave spawn rates based on day length and customer cap
+	# Note: Synced with GameLoopManager.phase_duration (180s)
+	var day_length = 180.0
+
+	var avg_spawn_rate = day_length / max_customers_per_day
+	
+	rush_spawn_rate = avg_spawn_rate * 0.67 # 33% faster than average
+	quiet_spawn_rate = avg_spawn_rate * 1.5 # 50% slower than average
+	print("CustomerManager: Wave rates - Rush: %.2fs, Quiet: %.2fs" % [rush_spawn_rate, quiet_spawn_rate])
+	
 	# Reset daily tracking
 	customers_served_today = 0
 	customers_missed_today = 0
 	total_satisfaction_today = 0.0
 	tea_sold_today.clear()
+	customers_spawned_today = 0
+
+	# Initialize first wave as rush
+	current_wave_state = WaveState.RUSH
+	current_wave_duration = randf_range(30.0, 50.0)
+	wave_timer = 0.0
+	print("CustomerManager: Starting with RUSH wave (%.1fs)" % current_wave_duration)
 
 func _on_day_ended(_day: int, _stats: Dictionary) -> void:
 	print("CustomerManager: Day ended - Served: %d, Missed: %d" % [customers_served_today, customers_missed_today])

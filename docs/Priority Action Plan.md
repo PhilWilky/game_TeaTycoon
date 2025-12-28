@@ -7,33 +7,13 @@
 - ✅ Task 1.3: Financial reports show cost breakdown (`tea_shop.gd`)
 - ✅ Task 1.4: Cumulative stats track costs (`game_state.gd`)
 - ✅ Task 1.5: Revenue tracking bug fixed (signal routing)
+- ✅ Task 1.5.1: Cap daily customers
+- ✅ Task 1.5.2: Randomize customer bunching
+- ✅ Task 1.5.3: Add customer cap hooks for future systems
 
 ---
 
-## Phase 1.5: Customer Flow & Balance (1 hour) 🚧 NEXT
-
-### Task 1.5.1: Cap daily customers
-
-- **File**: `customer_manager.gd`
-- Add `max_customers_per_day: int = 60`
-- Add `customers_spawned_today: int` counter
-- Stop spawning at max, reset in `_on_day_started()`
-
-### Task 1.5.2: Randomize customer bunching
-
-- Create spawn "waves" (high/low activity periods)
-- Random intervals between waves
-- Enables turn-skipping for testing
-
-### Task 1.5.3: Add customer cap hooks for future systems
-
-- `max_customers_per_day` as base value (default: 60)
-- **Hook for future**: Marketing/staff/equipment upgrades can modify this
-- No actual upgrade system yet - just the variable infrastructure
-
----
-
-## Phase 2: Save System (2-3 hours)
+## Phase 2: Save System (2-3 hours) 🚧 NEXT
 
 ### Setup (Editor)
 
@@ -84,7 +64,7 @@ PhaseManager.Phase.MORNING_PREP:
 ## 📋 CHECKLIST
 
 - [x] **Phase 1**: All critical bugs fixed + revenue tracking
-- [ ] **Phase 1.5**: Customer flow capped & balanced
+- [x] **Phase 1.5**: Customer flow capped & balanced
 - [ ] **Phase 2**: Save/load fully functional
 - [ ] **Phase 3**: Files organized, docs updated
 
@@ -94,10 +74,14 @@ PhaseManager.Phase.MORNING_PREP:
 
 | Phase     | Status         | Started    | Notes                     |
 | --------- | -------------- | ---------- | ------------------------- |
-| Phase 1   | ✅ Complete    | 27-12-2024 | Revenue tracking working! |
-| Phase 1.5 | 🟡 In Progress |            |                           |
+| Phase 1   | ✅ Complete    | 27-12-2025 | Revenue tracking working! |
+| Phase 1.5 | ✅ Complete    | 27-12-2025 | All working as expected   |
 | Phase 2   | ⬜ Not Started |            |                           |
 | Phase 3   | ⬜ Not Started |            |                           |
+
+✅ Complete  
+🟡 In Progress  
+⬜ Not Started
 
 ---
 

@@ -18,8 +18,8 @@ func _init():
 func initialize_tea(tea_name: String) -> void:
 	if not tea_name in inventory:
 		inventory[tea_name] = {
-			"current": 20,  # Starting stock
-			"max": 50,     # Maximum capacity
+			"current": 20, # Starting stock
+			"max": 100, # Maximum capacity
 			"reorder_point": 10
 		}
 		emit_signal("stock_changed", tea_name, inventory[tea_name].current)
