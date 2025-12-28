@@ -229,10 +229,11 @@ func _on_day_started(_day: int) -> void:
 	
 	# Calculate wave spawn rates based on day length and customer cap
 	# Note: Synced with GameLoopManager.phase_duration (180s)
+	# TODO: Make this dynamic
 	var day_length = 180.0
 
 	var avg_spawn_rate = day_length / max_customers_per_day
-	
+
 	rush_spawn_rate = avg_spawn_rate * 0.67 # 33% faster than average
 	quiet_spawn_rate = avg_spawn_rate * 1.5 # 50% slower than average
 	print("CustomerManager: Wave rates - Rush: %.2fs, Quiet: %.2fs" % [rush_spawn_rate, quiet_spawn_rate])
