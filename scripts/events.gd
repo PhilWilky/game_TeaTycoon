@@ -62,11 +62,11 @@ func emit_game_event(event_name: String, data: Dictionary = {}) -> void:
 		_:
 			push_warning("Unknown event: " + event_name)
 
-func _notification(what: int) -> void:
-	if what == NOTIFICATION_PREDELETE:
-		# Clean up any remaining connections
-		if GameState:
-			if GameState.is_connected("money_changed", _on_money_changed):
-				GameState.money_changed.disconnect(_on_money_changed)
-			if GameState.is_connected("reputation_changed", _on_reputation_changed):
-				GameState.reputation_changed.disconnect(_on_reputation_changed)
+#func _notification(what: int) -> void:
+	#if what == NOTIFICATION_PREDELETE:
+		## Clean up any remaining connections
+		#if GameState:
+			#if GameState.is_connected("money_changed", _on_money_changed):
+				#GameState.money_changed.disconnect(_on_money_changed)
+			#if GameState.is_connected("reputation_changed", _on_reputation_changed):
+				#GameState.reputation_changed.disconnect(_on_reputation_changed)

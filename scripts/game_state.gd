@@ -26,7 +26,13 @@ var cumulative_stats = {
 	"total_revenue": 0.0,
 	"best_daily_profit": 0.0,
 	"perfect_days": 0,  # Days with 0 missed customers
-	"tea_types_unlocked": 1  # Start with Builder's Tea
+	"tea_types_unlocked": 1,  # Start with Builder's Tea
+	# NEW - Added cost tracking
+	"total_restock_costs": 0.0,
+	"total_milk_costs": 0.0,
+	"total_milk_spoiled_units": 0.0,
+	"total_milk_spoiled_value": 0.0,
+	"total_costs": 0.0
 }
 
 func initialize() -> void:
@@ -40,6 +46,22 @@ func initialize() -> void:
 	current_weather = "sunny"
 	daily_revenue = 0.0
 	satisfaction_history.clear()
+	
+	# Reset cumulative stats on new game
+	cumulative_stats = {
+		"total_customers_served": 0,
+		"total_customers_missed": 0,
+		"total_days_played": 0,
+		"total_revenue": 0.0,
+		"best_daily_profit": 0.0,
+		"perfect_days": 0,
+		"tea_types_unlocked": 1,
+		"total_restock_costs": 0.0,
+		"total_milk_costs": 0.0,
+		"total_milk_spoiled_units": 0.0,
+		"total_milk_spoiled_value": 0.0,
+		"total_costs": 0.0
+	}
 
 func add_money(amount: float) -> void:
 	money += amount
@@ -123,6 +145,13 @@ func update_cumulative_stats(daily_stats: Dictionary) -> void:
 	cumulative_stats.total_days_played += 1
 	cumulative_stats.total_revenue += daily_stats.get("revenue", 0.0)
 	
+	# NEW - Update cost tracking
+	cumulative_stats.total_restock_costs += daily_stats.get("restock_costs", 0.0)
+	cumulative_stats.total_milk_costs += daily_stats.get("milk_costs", 0.0)
+	cumulative_stats.total_milk_spoiled_units += daily_stats.get("milk_spoiled_units", 0.0)
+	cumulative_stats.total_milk_spoiled_value += daily_stats.get("milk_spoiled_value", 0.0)
+	cumulative_stats.total_costs = cumulative_stats.total_restock_costs + cumulative_stats.total_milk_costs + cumulative_stats.total_milk_spoiled_value
+	
 	var daily_profit = daily_stats.get("profit", 0.0)
 	if daily_profit > cumulative_stats.best_daily_profit:
 		cumulative_stats.best_daily_profit = daily_profit
@@ -139,4 +168,11 @@ func print_cumulative_stats() -> void:
 	print("Best Daily Profit: £%.2f" % cumulative_stats.best_daily_profit)
 	print("Perfect Days: ", cumulative_stats.perfect_days)
 	print("Tea Types Unlocked: ", cumulative_stats.tea_types_unlocked)
+	# NEW - Print cost statistics
+	print("--- COSTS ---")
+	print("Total Restock Costs: £%.2f" % cumulative_stats.total_restock_costs)
+	print("Total Milk Costs: £%.2f" % cumulative_stats.total_milk_costs)
+	print("Total Milk Spoiled: %.1f units (£%.2f)" % [cumulative_stats.total_milk_spoiled_units, cumulative_stats.total_milk_spoiled_value])
+	print("Total All Costs: £%.2f" % cumulative_stats.total_costs)
+	print("Net Profit (Revenue - Costs): £%.2f" % (cumulative_stats.total_revenue - cumulative_stats.total_costs))
 	print("==============================")

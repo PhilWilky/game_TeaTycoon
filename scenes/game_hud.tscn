@@ -1,4 +1,4 @@
-[gd_scene load_steps=2 format=3 uid="uid://bgnpeasn5ckbk"]
+[gd_scene load_steps=3 format=3 uid="uid://bgnpeasn5ckbk"]
 
 [ext_resource type="Script" path="res://scripts/ui/game_hud.gd" id="1_hud"]
 [ext_resource type="Theme" uid="uid://bsbuftenfm3cj" path="res://themes/tea_shop_theme.tres" id="2_theme"]
@@ -37,6 +37,7 @@ theme_override_constants/separation = 20
 [node name="TabContainer" type="TabContainer" parent="ContentContainer/VBoxContainer/MainContent"]
 layout_mode = 2
 size_flags_horizontal = 3
+current_tab = 0
 
 [node name="Reports" type="MarginContainer" parent="ContentContainer/VBoxContainer/MainContent/TabContainer"]
 layout_mode = 2
@@ -44,81 +45,79 @@ theme_override_constants/margin_left = 10
 theme_override_constants/margin_top = 10
 theme_override_constants/margin_right = 10
 theme_override_constants/margin_bottom = 10
-metadata/_tab_name = "Reports"  # Add this line
+metadata/_tab_name = "Reports"
+metadata/_tab_index = 0
 
-[node name="ScrollContainer" type="ScrollContainer" parent="ContentContainer/VBoxContainer/MainContent/TabContainer/Reports"]
-layout_mode = 2
-
-[node name="StatsContainer" type="VBoxContainer" parent="ContentContainer/VBoxContainer/MainContent/TabContainer/Reports/ScrollContainer"]
+[node name="ContentContainer_VBoxContainer_MainContent_TabContainer_Reports_ScrollContainer#StatsContainer" type="VBoxContainer" parent="."]
 layout_mode = 2
 theme_override_constants/separation = 16
 
-[node name="KeyMetrics" type="GridContainer" parent="ContentContainer/VBoxContainer/MainContent/TabContainer/Reports/ScrollContainer/StatsContainer"]
+[node name="ContentContainer_VBoxContainer_MainContent_TabContainer_Reports_ScrollContainer_StatsContainer#KeyMetrics" type="GridContainer" parent="."]
 layout_mode = 2
 columns = 3
 
-[node name="RevenueCard" type="PanelContainer" parent="ContentContainer/VBoxContainer/MainContent/TabContainer/Reports/ScrollContainer/StatsContainer/KeyMetrics"]
+[node name="ContentContainer_VBoxContainer_MainContent_TabContainer_Reports_ScrollContainer_StatsContainer_KeyMetrics#RevenueCard" type="PanelContainer" parent="."]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="VBox" type="VBoxContainer" parent="ContentContainer/VBoxContainer/MainContent/TabContainer/Reports/ScrollContainer/StatsContainer/KeyMetrics/RevenueCard"]
+[node name="ContentContainer_VBoxContainer_MainContent_TabContainer_Reports_ScrollContainer_StatsContainer_KeyMetrics_RevenueCard#VBox" type="VBoxContainer" parent="."]
 layout_mode = 2
 
-[node name="Label" type="Label" parent="ContentContainer/VBoxContainer/MainContent/TabContainer/Reports/ScrollContainer/StatsContainer/KeyMetrics/RevenueCard/VBox"]
+[node name="ContentContainer_VBoxContainer_MainContent_TabContainer_Reports_ScrollContainer_StatsContainer_KeyMetrics_RevenueCard_VBox#Label" type="Label" parent="."]
 layout_mode = 2
 text = "Revenue"
 
-[node name="Amount" type="Label" parent="ContentContainer/VBoxContainer/MainContent/TabContainer/Reports/ScrollContainer/StatsContainer/KeyMetrics/RevenueCard/VBox"]
+[node name="ContentContainer_VBoxContainer_MainContent_TabContainer_Reports_ScrollContainer_StatsContainer_KeyMetrics_RevenueCard_VBox#Amount" type="Label" parent="."]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.2, 0.8, 0.2, 1)
 theme_override_font_sizes/font_size = 24
 text = "£0.00"
 
-[node name="CustomerCard" type="PanelContainer" parent="ContentContainer/VBoxContainer/MainContent/TabContainer/Reports/ScrollContainer/StatsContainer/KeyMetrics"]
+[node name="ContentContainer_VBoxContainer_MainContent_TabContainer_Reports_ScrollContainer_StatsContainer_KeyMetrics#CustomerCard" type="PanelContainer" parent="."]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="VBox" type="VBoxContainer" parent="ContentContainer/VBoxContainer/MainContent/TabContainer/Reports/ScrollContainer/StatsContainer/KeyMetrics/CustomerCard"]
+[node name="ContentContainer_VBoxContainer_MainContent_TabContainer_Reports_ScrollContainer_StatsContainer_KeyMetrics_CustomerCard#VBox" type="VBoxContainer" parent="."]
 layout_mode = 2
 
-[node name="Label" type="Label" parent="ContentContainer/VBoxContainer/MainContent/TabContainer/Reports/ScrollContainer/StatsContainer/KeyMetrics/CustomerCard/VBox"]
+[node name="ContentContainer_VBoxContainer_MainContent_TabContainer_Reports_ScrollContainer_StatsContainer_KeyMetrics_CustomerCard_VBox#Label" type="Label" parent="."]
 layout_mode = 2
 text = "Customers"
 
-[node name="Amount" type="Label" parent="ContentContainer/VBoxContainer/MainContent/TabContainer/Reports/ScrollContainer/StatsContainer/KeyMetrics/CustomerCard/VBox"]
+[node name="ContentContainer_VBoxContainer_MainContent_TabContainer_Reports_ScrollContainer_StatsContainer_KeyMetrics_CustomerCard_VBox#Amount" type="Label" parent="."]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.2, 0.2, 0.8, 1)
 theme_override_font_sizes/font_size = 24
 text = "0"
 
-[node name="SatisfactionCard" type="PanelContainer" parent="ContentContainer/VBoxContainer/MainContent/TabContainer/Reports/ScrollContainer/StatsContainer/KeyMetrics"]
+[node name="ContentContainer_VBoxContainer_MainContent_TabContainer_Reports_ScrollContainer_StatsContainer_KeyMetrics#SatisfactionCard" type="PanelContainer" parent="."]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="VBox" type="VBoxContainer" parent="ContentContainer/VBoxContainer/MainContent/TabContainer/Reports/ScrollContainer/StatsContainer/KeyMetrics/SatisfactionCard"]
+[node name="ContentContainer_VBoxContainer_MainContent_TabContainer_Reports_ScrollContainer_StatsContainer_KeyMetrics_SatisfactionCard#VBox" type="VBoxContainer" parent="."]
 layout_mode = 2
 
-[node name="Label" type="Label" parent="ContentContainer/VBoxContainer/MainContent/TabContainer/Reports/ScrollContainer/StatsContainer/KeyMetrics/SatisfactionCard/VBox"]
+[node name="ContentContainer_VBoxContainer_MainContent_TabContainer_Reports_ScrollContainer_StatsContainer_KeyMetrics_SatisfactionCard_VBox#Label" type="Label" parent="."]
 layout_mode = 2
 text = "Satisfaction"
 
-[node name="Amount" type="Label" parent="ContentContainer/VBoxContainer/MainContent/TabContainer/Reports/ScrollContainer/StatsContainer/KeyMetrics/SatisfactionCard/VBox"]
+[node name="ContentContainer_VBoxContainer_MainContent_TabContainer_Reports_ScrollContainer_StatsContainer_KeyMetrics_SatisfactionCard_VBox#Amount" type="Label" parent="."]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.8, 0.2, 0.8, 1)
 theme_override_font_sizes/font_size = 24
 text = "0%"
 
-[node name="TeaSales" type="PanelContainer" parent="ContentContainer/VBoxContainer/MainContent/TabContainer/Reports/ScrollContainer/StatsContainer"]
+[node name="ContentContainer_VBoxContainer_MainContent_TabContainer_Reports_ScrollContainer_StatsContainer#TeaSales" type="PanelContainer" parent="."]
 layout_mode = 2
 
-[node name="VBox" type="VBoxContainer" parent="ContentContainer/VBoxContainer/MainContent/TabContainer/Reports/ScrollContainer/StatsContainer/TeaSales"]
+[node name="ContentContainer_VBoxContainer_MainContent_TabContainer_Reports_ScrollContainer_StatsContainer_TeaSales#VBox" type="VBoxContainer" parent="."]
 layout_mode = 2
 
-[node name="Label" type="Label" parent="ContentContainer/VBoxContainer/MainContent/TabContainer/Reports/ScrollContainer/StatsContainer/TeaSales/VBox"]
+[node name="ContentContainer_VBoxContainer_MainContent_TabContainer_Reports_ScrollContainer_StatsContainer_TeaSales_VBox#Label" type="Label" parent="."]
 layout_mode = 2
 text = "Tea Sales"
 
-[node name="SalesList" type="VBoxContainer" parent="ContentContainer/VBoxContainer/MainContent/TabContainer/Reports/ScrollContainer/StatsContainer/TeaSales/VBox"]
+[node name="ContentContainer_VBoxContainer_MainContent_TabContainer_Reports_ScrollContainer_StatsContainer_TeaSales_VBox#SalesList" type="VBoxContainer" parent="."]
 layout_mode = 2
 
 [node name="InventorySystem" type="Node" parent="."]

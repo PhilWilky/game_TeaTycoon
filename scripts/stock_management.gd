@@ -16,6 +16,7 @@ var tea_manager = TeaManager  # Direct reference
 var tea_rows = {}
 var milk_system: MilkSystem
 var phase_manager: PhaseManager
+var stats_manager: StatsManager  # NEW - Added reference
 
 func _ready() -> void:
 	print("Stock Management: Ready")
@@ -29,11 +30,12 @@ func _ready() -> void:
 	# Initial tea row creation
 	call_deferred("_create_tea_rows")
 
-func setup(inventory: InventorySystem, milk: MilkSystem, p_manager: PhaseManager = null) -> void:
+func setup(inventory: InventorySystem, milk: MilkSystem, p_manager: PhaseManager = null, s_manager: StatsManager = null) -> void:
 	print("Stock Management: Setup with inventory system")
 	inventory_system = inventory
 	milk_system = milk
 	phase_manager = p_manager
+	stats_manager = s_manager  # NEW - Store stats manager reference
 	_create_tea_rows()
 	_update_stock_display()
 	_setup_milk_ui()
@@ -137,6 +139,8 @@ func _on_restock_pressed() -> void:
 		return
 
 	var total_cost = 0.0
+	var tea_restock_cost = 0.0  # NEW - Track tea costs separately
+	var milk_purchase_cost = 0.0  # NEW - Track milk costs separately
 	var purchases = {}
 	
 	# Calculate tea costs
@@ -147,7 +151,9 @@ func _on_restock_pressed() -> void:
 			var tea_cost = tea_manager.TEA_DATA[tea_name].cost
 			var space_available = inventory_system.get_max_capacity(tea_name) - inventory_system.get_stock(tea_name)
 			var actual_restock = min(amount, space_available)
-			total_cost += actual_restock * tea_cost
+			var item_cost = actual_restock * tea_cost
+			total_cost += item_cost
+			tea_restock_cost += item_cost  # NEW - Add to tea total
 			purchases[tea_name] = {
 				"requested": amount,
 				"actual": actual_restock
@@ -156,7 +162,8 @@ func _on_restock_pressed() -> void:
 	# Add milk cost
 	var milk_amount = milk_purchase_spinner.value
 	if milk_amount > 0:
-		total_cost += milk_system.MILK_COST * milk_amount
+		milk_purchase_cost = milk_system.MILK_COST * milk_amount  # NEW - Store milk cost
+		total_cost += milk_purchase_cost
 	
 	# Check if we can afford everything
 	if total_cost > GameState.money:
@@ -187,6 +194,13 @@ func _on_restock_pressed() -> void:
 	
 	# Deduct total cost
 	GameState.spend_money(total_cost)
+	
+	# NEW - Record costs in stats manager
+	if stats_manager:
+		if tea_restock_cost > 0:
+			stats_manager.record_restock_cost(tea_restock_cost)
+		if milk_purchase_cost > 0:
+			stats_manager.record_milk_purchase(milk_purchase_cost)
 	
 	# Show appropriate notification
 	if partial_restock:
@@ -261,12 +275,20 @@ func _on_milk_depleted():
 	low_stock_warning.text = "Warning: Out of milk!"
 
 func _on_milk_spoiled(amount_lost: float):
+	# Calculate the value of spoiled milk
+	var spoiled_value = amount_lost * milk_system.MILK_COST  # NEW - Calculate loss value
+	
 	Events.emit_signal("show_notification", 
 		"Milk Spoiled", 
-		"%.1f units of milk spoiled overnight!" % amount_lost,
+		"%.1f units of milk spoiled overnight! (£%.2f lost)" % [amount_lost, spoiled_value],  # NEW - Show value
 		"warning")
-		
-	update_milk_display(0)
+	
+	# NEW - Record spoilage in stats manager
+	if stats_manager:
+		stats_manager.record_milk_spoilage(amount_lost, spoiled_value)
+	
+	# FIXED - Get actual remaining stock instead of hardcoding 0
+	update_milk_display(milk_system.get_cups_remaining())
 
 func _on_tea_unlocked(tea_name: String) -> void:
 	_create_tea_rows()  # Recreate all rows to include the new tea

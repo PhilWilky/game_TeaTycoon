@@ -104,15 +104,17 @@ func _init_managers() -> void:
 	# Create PhaseManager first
 	phase_manager = PhaseManager.new()
 	add_child(phase_manager)
-	phase_manager.setup(inventory_system, null, milk_system)  # Setup without CustomerManager first
+	#  Then - Pass stats_manager
+	phase_manager.setup(inventory_system, null, milk_system, null, stats_manager)
 	
 	# Create CustomerManager and connect it to PhaseManager
 	customer_manager = CustomerManager.new()
 	add_child(customer_manager)
 	customer_manager.setup(phase_manager, inventory_system, milk_system, customer_queue_instance)
 	
-	# Now update PhaseManager with CustomerManager reference
+	# Now update PhaseManager with references
 	phase_manager.customer_manager = customer_manager
+	phase_manager.stats_manager = stats_manager # NEW - Also pass stats_manager
 	
 	print("TeaShop: Managers initialized")
 
@@ -136,7 +138,7 @@ func _setup_ui() -> void:
 	if $MarginContainer/MainLayout/TabContainer/Inventory/InventoryPanel:
 		print("Found inventory panel, setting up...")
 		var panel = $MarginContainer/MainLayout/TabContainer/Inventory/InventoryPanel
-		panel.setup(inventory_system, milk_system, phase_manager)
+		panel.setup(inventory_system, milk_system, phase_manager, stats_manager)
 	
 	# Initialize empty reports tab with placeholder
 	_populate_evening_reports({})
@@ -352,7 +354,7 @@ func _create_multipliers_panel(parent: VBoxContainer, stats: Dictionary) -> void
 	# TODO placeholders for future systems
 	var todo_items = [
 		"Staff Efficiency: Coming Soon",
-		"Location Bonuses: Coming Soon", 
+		"Location Bonuses: Coming Soon",
 		"Advertising Effects: Coming Soon",
 		"Equipment Upgrades: Coming Soon"
 	]
@@ -410,15 +412,16 @@ func _on_stats_updated(stats: Dictionary) -> void:
 	if tea_grid:
 		for tea_card in tea_grid.get_children():
 			if tea_card.tea_data and stats.tea_sold.has(tea_card.tea_data.name):
-				tea_card.update_sales(stats.tea_sold[tea_card.tea_data.name])
+				# tea_card doesn't have update_sales function - removed
+				pass
 	
 	# Update any other UI elements that show live stats
 	_update_ui()
 
 func _on_tea_prepared(tea_name: String, quality: float) -> void:
 	print("Tea prepared: %s with quality: %.2f" % [tea_name, quality])
-	Events.emit_signal("show_notification", 
-		"Tea Prepared", 
+	Events.emit_signal("show_notification",
+		"Tea Prepared",
 		"%s prepared with %.0f%% quality" % [tea_name, quality * 100],
 		"success")
 
@@ -478,7 +481,7 @@ func _create_metrics_panel(parent: VBoxContainer, stats: Dictionary) -> void:
 	
 	# Customers Missed
 	var missed_label = Label.new()
-	missed_label.text = "Missed" 
+	missed_label.text = "Missed"
 	var missed_value = Label.new()
 	missed_value.text = str(stats.get("customers_missed", 0))
 	missed_value.add_theme_color_override("font_color", Color.RED)
@@ -491,7 +494,7 @@ func _create_metrics_panel(parent: VBoxContainer, stats: Dictionary) -> void:
 	
 	grid.add_child(revenue_label)
 	grid.add_child(customers_label)
-	grid.add_child(missed_label) 
+	grid.add_child(missed_label)
 	grid.add_child(satisfaction_label)
 	grid.add_child(revenue_value)
 	grid.add_child(customers_value)
@@ -533,6 +536,7 @@ func _create_customer_panel(parent: VBoxContainer, stats: Dictionary) -> void:
 func _create_financial_panel(parent: VBoxContainer, stats: Dictionary) -> void:
 	var panel = PanelContainer.new()
 	var vbox = VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 8)
 	
 	var title = Label.new()
 	title.text = "Financial Summary"
@@ -540,28 +544,129 @@ func _create_financial_panel(parent: VBoxContainer, stats: Dictionary) -> void:
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(title)
 	
-	# Profit calculation
-	var revenue = stats.get("revenue", 0.0)
-	var costs = inventory_system.daily_costs if inventory_system else 0.0
-	var profit = revenue - costs
+	# Revenue section
+	var revenue_hbox = HBoxContainer.new()
+	var revenue_label = Label.new()
+	revenue_label.text = "Revenue:"
+	revenue_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var revenue_value = Label.new()
+	var revenue_amount = stats.get("revenue", 0.0)
+	revenue_value.text = "£%.2f" % revenue_amount
+	revenue_value.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	revenue_value.add_theme_color_override("font_color", Color(0.2, 0.8, 0.2))
+	revenue_hbox.add_child(revenue_label)
+	revenue_hbox.add_child(revenue_value)
+	vbox.add_child(revenue_hbox)
 	
+	# Add separator
+	var separator1 = HSeparator.new()
+	vbox.add_child(separator1)
+	
+	# Costs header
+	var costs_header = Label.new()
+	costs_header.text = "Expenses:"
+	costs_header.add_theme_font_size_override("font_size", 14)
+	vbox.add_child(costs_header)
+	
+	# Tea restock costs
+	var restock_cost = stats.get("restock_costs", 0.0)
+	if restock_cost > 0:
+		var restock_hbox = HBoxContainer.new()
+		var restock_label = Label.new()
+		restock_label.text = "  Tea Restocking:"
+		restock_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var restock_value = Label.new()
+		restock_value.text = "£%.2f" % restock_cost
+		restock_value.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		restock_value.add_theme_color_override("font_color", Color(0.8, 0.4, 0.4))
+		restock_hbox.add_child(restock_label)
+		restock_hbox.add_child(restock_value)
+		vbox.add_child(restock_hbox)
+	
+	# Milk purchase costs
+	var milk_cost = stats.get("milk_costs", 0.0)
+	if milk_cost > 0:
+		var milk_hbox = HBoxContainer.new()
+		var milk_label = Label.new()
+		milk_label.text = "  Milk Purchases:"
+		milk_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var milk_value = Label.new()
+		milk_value.text = "£%.2f" % milk_cost
+		milk_value.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		milk_value.add_theme_color_override("font_color", Color(0.8, 0.4, 0.4))
+		milk_hbox.add_child(milk_label)
+		milk_hbox.add_child(milk_value)
+		vbox.add_child(milk_hbox)
+	
+	# Milk spoilage losses
+	var spoiled_value = stats.get("milk_spoiled_value", 0.0)
+	var spoiled_units = stats.get("milk_spoiled_units", 0.0)
+	if spoiled_value > 0:
+		var spoiled_hbox = HBoxContainer.new()
+		var spoiled_label = Label.new()
+		spoiled_label.text = "  Milk Spoiled:"
+		spoiled_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var spoiled_value_label = Label.new()
+		spoiled_value_label.text = "%.1f units (£%.2f)" % [spoiled_units, spoiled_value]
+		spoiled_value_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		spoiled_value_label.add_theme_color_override("font_color", Color(0.9, 0.2, 0.2))
+		spoiled_hbox.add_child(spoiled_label)
+		spoiled_hbox.add_child(spoiled_value_label)
+		vbox.add_child(spoiled_hbox)
+	
+	# Staff costs (when implemented)
+	var staff_cost = stats.get("staff_costs", 0.0)
+	if staff_cost > 0:
+		var staff_hbox = HBoxContainer.new()
+		var staff_label = Label.new()
+		staff_label.text = "  Staff Wages:"
+		staff_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var staff_value = Label.new()
+		staff_value.text = "£%.2f" % staff_cost
+		staff_value.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		staff_value.add_theme_color_override("font_color", Color(0.8, 0.4, 0.4))
+		staff_hbox.add_child(staff_label)
+		staff_hbox.add_child(staff_value)
+		vbox.add_child(staff_hbox)
+	
+	# Total costs
+	var total_costs = restock_cost + milk_cost + spoiled_value + staff_cost
+	if total_costs > 0:
+		var total_costs_hbox = HBoxContainer.new()
+		var total_costs_label = Label.new()
+		total_costs_label.text = "Total Expenses:"
+		total_costs_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var total_costs_value = Label.new()
+		total_costs_value.text = "£%.2f" % total_costs
+		total_costs_value.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		total_costs_value.add_theme_color_override("font_color", Color(0.8, 0.3, 0.3))
+		total_costs_hbox.add_child(total_costs_label)
+		total_costs_hbox.add_child(total_costs_value)
+		vbox.add_child(total_costs_hbox)
+	
+	# Add separator
+	var separator2 = HSeparator.new()
+	vbox.add_child(separator2)
+	
+	# Net profit
+	var profit = revenue_amount - total_costs
 	var profit_hbox = HBoxContainer.new()
 	var profit_label = Label.new()
-	profit_label.text = "Profit:"
+	profit_label.text = "Net Profit:"
 	profit_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	
+	profit_label.add_theme_font_size_override("font_size", 16)
 	var profit_value = Label.new()
 	profit_value.text = "£%.2f" % profit
 	profit_value.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	profit_value.add_theme_color_override("font_color", Color.GREEN if profit > 0 else Color.RED)
-	
+	profit_value.add_theme_font_size_override("font_size", 16)
+	profit_value.add_theme_color_override("font_color", Color(0.2, 0.8, 0.2) if profit > 0 else Color(0.8, 0.2, 0.2))
 	profit_hbox.add_child(profit_label)
 	profit_hbox.add_child(profit_value)
 	vbox.add_child(profit_hbox)
 	
 	panel.add_child(vbox)
 	parent.add_child(panel)
-	
+
 func _unhandled_input(event: InputEvent) -> void:
 	# Debug shortcut: Press 'E' to end day early
 	if event is InputEventKey and event.pressed:

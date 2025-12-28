@@ -47,15 +47,15 @@ func _process(delta: float) -> void:
 func _get_spawn_interval() -> float:
 	# Base interval randomly between 1 and 4 seconds
 	# Reduced customer frequency for better game balance
-	var base_interval = randf_range(3.0, 7.0)  # Changed from 1.0-4.0
+	var base_interval = randf_range(1.5, 3.5) # Faster customer flow
 	
 	# Weather affects how likely people are to want tea
 	var weather_mod = 1.0
 	match GameState.current_weather:
-		"sunny": weather_mod = 0.8  # Changed from 0.7
-		"rainy": weather_mod = 1.3  # Changed from 1.2
-		"cold": weather_mod = 1.0   # Changed from 0.8
-		"hot": weather_mod = 1.4    # Changed from 1.3
+		"sunny": weather_mod = 0.8 # Changed from 0.7
+		"rainy": weather_mod = 1.3 # Changed from 1.2
+		"cold": weather_mod = 1.0 # Changed from 0.8
+		"hot": weather_mod = 1.4 # Changed from 1.3
 	
 	return base_interval * weather_mod
 
@@ -75,7 +75,7 @@ func _try_spawn_customer() -> void:
 			var timer = get_tree().create_timer(randf_range(3.0, 5.0))
 			timer.timeout.connect(_process_customer_order.bind(customer))
 	else:
-		emit_signal("customer_missed", 
+		emit_signal("customer_missed",
 			CustomerDemand.MissReason.NO_TEA_TYPE if not TeaManager.is_tea_unlocked(customer.tea_preference)
 			else CustomerDemand.MissReason.OUT_OF_STOCK
 		)
@@ -114,12 +114,16 @@ func _process_customer_order(customer: GameTypes.Customer) -> void:
 		GameState.add_money(revenue)
 		
 		# after successful serving
-		emit_signal("customer_served", {
+		var customer_data = {
 			"type": customer.type,
 			"tea": customer.tea_preference,
 			"satisfaction": satisfaction,
 			"revenue": revenue
-		}, satisfaction)
+		}
+		
+		# Emit through Events so StatsManager receives it
+		Events.emit_signal("customer_served", customer_data, satisfaction)
+		emit_signal("customer_served", customer_data, satisfaction)
 
 		# Add tracking
 		customers_served_today += 1

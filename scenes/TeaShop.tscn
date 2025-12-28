@@ -2,7 +2,7 @@
 
 [ext_resource type="Theme" uid="uid://bsbuftenfm3cj" path="res://themes/tea_shop_theme.tres" id="1_6s5vf"]
 [ext_resource type="Script" path="res://scripts/tea_shop.gd" id="2_6tob4"]
-[ext_resource type="PackedScene" path="res://scenes/inventory_panel.tscn" id="3_inventory"]
+[ext_resource type="PackedScene" uid="uid://bppy3vqlflk0f" path="res://scenes/inventory_panel.tscn" id="3_inventory"]
 
 [node name="TeaShop" type="Control"]
 layout_mode = 3

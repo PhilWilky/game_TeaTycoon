@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="Tea Tycoon"
-run/main_scene="res://scenes/TeaShop.tscn"
+run/main_scene="res://scenes/MainMenu.tscn"
 config/features=PackedStringArray("4.3", "Mobile")
 config/icon="res://icon.svg"
 
@@ -21,6 +21,7 @@ GameTypes="*res://scripts/game_types.gd"
 Events="*res://scripts/events.gd"
 TeaManager="*res://scripts/tea_manager.gd"
 GameState="*res://scripts/game_state.gd"
+SaveSystem="*res://scripts/save_system.gd"
 
 [rendering]
 

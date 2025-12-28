@@ -13,7 +13,12 @@ var daily_stats = {
 	"satisfaction_total": 0.0,
 	"tea_sold": {},
 	"milk_used": 0,
-	"staff_costs": 0.0
+	"staff_costs": 0.0,
+	# NEW - Added cost tracking fields
+	"restock_costs": 0.0,
+	"milk_costs": 0.0,
+	"milk_spoiled_units": 0.0,
+	"milk_spoiled_value": 0.0
 }
 
 var historical_stats = []
@@ -33,7 +38,12 @@ func reset_daily_stats() -> void:
 		"satisfaction_total": 0.0,
 		"tea_sold": {},
 		"milk_used": 0,
-		"staff_costs": 0.0
+		"staff_costs": 0.0,
+		# NEW - Reset new fields
+		"restock_costs": 0.0,
+		"milk_costs": 0.0,
+		"milk_spoiled_units": 0.0,
+		"milk_spoiled_value": 0.0
 	}
 
 func record_sale(tea_name: String, revenue: float, cost: float, satisfaction: float) -> void:
@@ -57,6 +67,33 @@ func record_staff_costs(amount: float) -> void:
 	daily_stats.staff_costs += amount
 	daily_stats.profit = daily_stats.revenue - daily_stats.costs - daily_stats.staff_costs
 
+# NEW - Record tea restocking costs
+func record_restock_cost(cost: float) -> void:
+	daily_stats.restock_costs += cost
+	daily_stats.costs += cost
+	# Recalculate profit including all costs
+	daily_stats.profit = daily_stats.revenue - daily_stats.costs - daily_stats.staff_costs - daily_stats.restock_costs - daily_stats.milk_costs
+	emit_signal("daily_stats_updated", get_current_stats())
+	print("StatsManager: Recorded restock cost: £%.2f" % cost)
+
+# NEW - Record milk purchase costs
+func record_milk_purchase(cost: float) -> void:
+	daily_stats.milk_costs += cost
+	daily_stats.costs += cost
+	# Recalculate profit including all costs
+	daily_stats.profit = daily_stats.revenue - daily_stats.costs - daily_stats.staff_costs - daily_stats.restock_costs - daily_stats.milk_costs
+	emit_signal("daily_stats_updated", get_current_stats())
+	print("StatsManager: Recorded milk purchase: £%.2f" % cost)
+
+# NEW - Record milk spoilage
+func record_milk_spoilage(units: float, value: float) -> void:
+	daily_stats.milk_spoiled_units += units
+	daily_stats.milk_spoiled_value += value
+	# Spoilage is a loss, subtract from profit
+	daily_stats.profit -= value
+	emit_signal("daily_stats_updated", get_current_stats())
+	print("StatsManager: Recorded milk spoilage: %.1f units (£%.2f)" % [units, value])
+
 func get_current_stats() -> Dictionary:
 	var stats = daily_stats.duplicate(true)
 	
@@ -72,6 +109,10 @@ func get_current_stats() -> Dictionary:
 		stats.service_rate = float(daily_stats.customers_served) / total_customers * 100
 	else:
 		stats.service_rate = 0.0
+	
+	# NEW - Include detailed cost breakdown
+	stats.total_costs = daily_stats.restock_costs + daily_stats.milk_costs + daily_stats.staff_costs
+	stats.net_profit = daily_stats.revenue - stats.total_costs - daily_stats.milk_spoiled_value
 		
 	return stats
 
@@ -122,10 +163,16 @@ func _calculate_percentage_change(old_value: float, new_value: float) -> float:
 	return ((new_value - old_value) / old_value) * 100.0
 
 # Signal handlers
-func _on_customer_served(_customer_data: Dictionary, satisfaction: float) -> void:
-	daily_stats.satisfaction_total += satisfaction * 100
-	daily_stats.customers_served += 1
-	emit_signal("daily_stats_updated", get_current_stats())
+func _on_customer_served(customer_data: Dictionary, satisfaction: float) -> void:
+	var tea_name = customer_data.get("tea", "Unknown")
+	var revenue = customer_data.get("revenue", 0.0)
+	
+	var cost = 0.0
+	if TeaManager.TEA_DATA.has(tea_name):
+		cost = TeaManager.TEA_DATA[tea_name].cost
+	
+	record_sale(tea_name, revenue, cost, satisfaction)
+	print("StatsManager: Recorded sale - %s for £%.2f" % [tea_name, revenue])
 
 func _on_customer_missed(_reason: int) -> void:
 	daily_stats.customers_missed += 1
