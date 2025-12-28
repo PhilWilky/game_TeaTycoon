@@ -19,12 +19,15 @@ var save_data_template = {
 	"phase_manager": {},
 	"player_settings": {
 		"auto_save_enabled": false,
-		"auto_save_interval": 300.0  # 5 minutes in seconds
+		"auto_save_interval": 300.0 # 5 minutes in seconds
 	}
 }
 
+var tea_shop_ref: Node = null # Reference to main TeaShop scene
 var auto_save_timer: Timer
 var auto_save_enabled: bool = false
+var should_load_on_ready: bool = false
+
 
 func _ready() -> void:
 	print("SaveSystem: Initializing...")
@@ -32,7 +35,7 @@ func _ready() -> void:
 
 func setup_auto_save() -> void:
 	auto_save_timer = Timer.new()
-	auto_save_timer.wait_time = 300.0  # 5 minutes
+	auto_save_timer.wait_time = 300.0 # 5 minutes
 	auto_save_timer.timeout.connect(_on_auto_save_timer_timeout)
 	auto_save_timer.autostart = false
 	add_child(auto_save_timer)
@@ -212,17 +215,20 @@ func _collect_game_state_data(save_data: Dictionary) -> bool:
 		"current_weather": GameState.current_weather,
 		"daily_revenue": GameState.daily_revenue,
 		"satisfaction_history": GameState.satisfaction_history,
-		"is_initialized": GameState.is_initialized
+		"is_initialized": GameState.is_initialized,
+		# NEW - Save cumulative stats
+		"cumulative_stats": GameState.cumulative_stats.duplicate(true)
 	}
 	return true
 
 func _collect_inventory_data(save_data: Dictionary) -> bool:
-	# This will need to be implemented based on your InventorySystem structure
-	# You'll need to add a get_save_data() method to your InventorySystem
-	
-	# Example structure:
-	# save_data.inventory = inventory_system.get_save_data() if inventory_system else {}
-	save_data.inventory = {}  # Placeholder
+	if tea_shop_ref and tea_shop_ref.has_method("save_game_data"):
+		tea_shop_ref.save_game_data()
+		# Get the collected data
+		var inventory_data = tea_shop_ref.inventory_system.get_save_data() if tea_shop_ref.inventory_system else {}
+		save_data.inventory = inventory_data
+		return true
+	save_data.inventory = {}
 	return true
 
 func _collect_tea_manager_data(save_data: Dictionary) -> bool:
@@ -230,19 +236,25 @@ func _collect_tea_manager_data(save_data: Dictionary) -> bool:
 		return false
 	
 	save_data.tea_manager = {
-		"unlocked_teas": TeaManager.unlocked_teas,
-		"prices": TeaManager.prices
+		"unlocked_teas": TeaManager.unlocked_teas.duplicate(),
+		"prices": TeaManager.prices.duplicate()
 	}
 	return true
 
 func _collect_milk_system_data(save_data: Dictionary) -> bool:
-	# This will need to be implemented based on your MilkSystem structure
-	save_data.milk_system = {}  # Placeholder
+	if tea_shop_ref and tea_shop_ref.milk_system:
+		save_data.milk_system = {
+			"current_stock": tea_shop_ref.milk_system.get_current_stock()
+		}
+		return true
+	save_data.milk_system = {}
 	return true
 
 func _collect_phase_manager_data(save_data: Dictionary) -> bool:
-	# This will need to be implemented based on your PhaseManager structure
-	save_data.phase_manager = {}  # Placeholder
+	if tea_shop_ref and tea_shop_ref.stats_manager:
+		save_data.stats_manager = tea_shop_ref.stats_manager.get_save_data()
+		return true
+	save_data.stats_manager = {}
 	return true
 
 # Data restoration methods
@@ -259,6 +271,10 @@ func _restore_game_state_data(save_data: Dictionary) -> bool:
 	GameState.satisfaction_history = game_state_data.get("satisfaction_history", [])
 	GameState.is_initialized = game_state_data.get("is_initialized", false)
 	
+	# NEW - Restore cumulative stats with backward compatibility
+	if game_state_data.has("cumulative_stats"):
+		GameState.cumulative_stats = game_state_data.cumulative_stats.duplicate(true)
+	
 	# Emit signals to update UI
 	GameState.emit_signal("money_changed", GameState.money)
 	GameState.emit_signal("reputation_changed", GameState.reputation)
@@ -266,7 +282,9 @@ func _restore_game_state_data(save_data: Dictionary) -> bool:
 	return true
 
 func _restore_inventory_data(save_data: Dictionary) -> bool:
-	# To be implemented based on your InventorySystem
+	if tea_shop_ref and tea_shop_ref.has_method("load_game_data"):
+		tea_shop_ref.inventory_system.load_save_data(save_data.get("inventory", {}))
+		return true
 	return true
 
 func _restore_tea_manager_data(save_data: Dictionary) -> bool:
@@ -274,17 +292,28 @@ func _restore_tea_manager_data(save_data: Dictionary) -> bool:
 		return false
 	
 	var tea_data = save_data.get("tea_manager", {})
-	TeaManager.unlocked_teas = tea_data.get("unlocked_teas", ["Builder's Tea"])
-	TeaManager.prices = tea_data.get("prices", {})
+	TeaManager.unlocked_teas = tea_data.get("unlocked_teas", ["Builder's Tea"]).duplicate()
+	TeaManager.prices = tea_data.get("prices", {}).duplicate()
+	
+	# Trigger UI updates if needed
+	for tea_name in TeaManager.unlocked_teas:
+		if tea_name != "Builder's Tea": # Don't emit for default tea
+			Events.emit_signal("tea_unlocked", tea_name)
 	
 	return true
 
 func _restore_milk_system_data(save_data: Dictionary) -> bool:
-	# To be implemented based on your MilkSystem
+	if tea_shop_ref and tea_shop_ref.milk_system:
+		var milk_data = save_data.get("milk_system", {})
+		tea_shop_ref.milk_system.current_milk_stock = milk_data.get("current_stock", 0.0)
+		tea_shop_ref.milk_system.emit_signal("milk_stock_changed", tea_shop_ref.milk_system.current_milk_stock)
+		return true
 	return true
 
 func _restore_phase_manager_data(save_data: Dictionary) -> bool:
-	# To be implemented based on your PhaseManager
+	if tea_shop_ref and tea_shop_ref.stats_manager:
+		tea_shop_ref.stats_manager.load_save_data(save_data.get("stats_manager", {}))
+		return true
 	return true
 
 func _restore_player_settings(save_data: Dictionary) -> void:

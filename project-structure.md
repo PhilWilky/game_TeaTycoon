@@ -1,7 +1,6 @@
 ﻿- .gitattributes
 - .gitignore
 - Create-Universal-FileTree.ps1
-- debug-session-annotated.txt
 - Get-Current-File-Folder-tree.ps1
 - icon.svg
 - icon.svg.import
@@ -18,7 +17,6 @@
     - Planning & Architecture Guide.md
     - tab_notification_guide.md
 - scenes/
-  - customer_manager.gd
   - customer_queue.tscn
   - game_hud.tscn
   - inventory_panel.tscn

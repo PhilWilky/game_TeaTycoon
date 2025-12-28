@@ -89,26 +89,27 @@ func _on_load_game_pressed() -> void:
 		print("MainMenu: SaveSystem not found")
 		return
 	
+	var save_system = get_node("/root/SaveSystem")
+	
+	# Check if save file exists
+	if not save_system.has_save_file():
+		print("MainMenu: No save file found")
+		var error_dialog = AcceptDialog.new()
+		error_dialog.dialog_text = "No save file found."
+		add_child(error_dialog)
+		error_dialog.popup_centered()
+		error_dialog.confirmed.connect(error_dialog.queue_free)
+		return
+	
 	loading_dialog.popup_centered()
 	
-	var save_system = get_node("/root/SaveSystem")
-	if save_system.has_method("load_game"):
-		var success = save_system.load_game()
-		
-		loading_dialog.hide()
-		
-		if success:
-			print("MainMenu: Game loaded successfully")
-			get_tree().change_scene_to_file("res://scenes/TeaShop.tscn")
-		else:
-			print("MainMenu: Failed to load game")
-			var error_dialog = AcceptDialog.new()
-			error_dialog.dialog_text = "Failed to load save file."
-			add_child(error_dialog)
-			error_dialog.popup_centered()
-			error_dialog.confirmed.connect(error_dialog.queue_free)
-	else:
-		loading_dialog.hide()
+	# Set flag to load after TeaShop initializes
+	save_system.should_load_on_ready = true
+	
+	print("MainMenu: Loading game...")
+	get_tree().change_scene_to_file("res://scenes/TeaShop.tscn")
+	
+	loading_dialog.hide()
 
 func _on_options_pressed() -> void:
 	print("MainMenu: Options pressed")

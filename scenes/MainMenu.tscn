@@ -91,8 +91,8 @@ horizontal_alignment = 1
 title = "Confirm New Game"
 initial_position = 2
 size = Vector2i(400, 150)
-dialog_text = "Starting a new game will not delete your current save file. Continue?"
 ok_button_text = "Yes"
+dialog_text = "Starting a new game will not delete your current save file. Continue?"
 cancel_button_text = "No"
 
 [node name="LoadingDialog" type="AcceptDialog" parent="."]

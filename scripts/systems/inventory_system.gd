@@ -87,3 +87,17 @@ func get_max_capacity(tea_name: String) -> int:
 
 func get_reorder_point(tea_name: String) -> int:
 	return inventory[tea_name].reorder_point if tea_name in inventory else 0
+
+# Save/Load support
+# Save/Load support
+func get_save_data() -> Dictionary:
+	return {
+		"inventory": inventory.duplicate(true)
+	}
+
+func load_save_data(data: Dictionary) -> void:
+	if data.has("inventory"):
+		inventory = data.get("inventory", {}).duplicate(true)
+		# Emit stock_changed for each tea to update UI
+		for tea_name in inventory:
+			emit_signal("stock_changed", tea_name, inventory[tea_name].current)

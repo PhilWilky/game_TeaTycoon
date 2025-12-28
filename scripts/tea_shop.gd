@@ -61,10 +61,33 @@ func _ready() -> void:
 	print("TeaShop: Initializing...")
 	_init_systems()
 	_init_managers()
+	
+	# Register with SaveSystem
+	if SaveSystem:
+		SaveSystem.tea_shop_ref = self
+		print("TeaShop: Registered with SaveSystem")
+		
+		# Load game if flagged from main menu
+		if SaveSystem.should_load_on_ready:
+			print("TeaShop: Loading save data...")
+			var success = SaveSystem.load_game()
+			SaveSystem.should_load_on_ready = false # Reset flag
+			
+			# Now manually restore the TeaShop-specific data
+			if success:
+				var file = FileAccess.open(SaveSystem.SAVE_FILE_PATH, FileAccess.READ)
+				if file:
+					var json_string = file.get_as_text()
+					file.close()
+					var json = JSON.new()
+					if json.parse(json_string) == OK:
+						var save_data = json.data
+						load_game_data(save_data)
+	
 	_connect_signals()
 	_setup_ui()
 	
-		# Enable input processing for debug shortcuts
+	# Enable input processing for debug shortcuts
 	set_process_unhandled_input(true)
 
 	print("TeaShop: Initialization complete")
@@ -198,6 +221,51 @@ func _setup_initial_tea_cards() -> void:
 		if tea_data.unlocked:
 			inventory_system.initialize_tea(tea_data.name)
 
+# Save/Load coordination
+func save_game_data() -> void:
+	print("TeaShop: Collecting game data for save...")
+	
+	# Create a comprehensive save data structure
+	var save_data = {
+		"inventory": inventory_system.get_save_data() if inventory_system else {},
+		"milk_stock": milk_system.get_current_stock() if milk_system else 0.0,
+		"stats": stats_manager.get_save_data() if stats_manager else {}
+	}
+	
+	# Store in SaveSystem's current save operation
+	# This will be called by SaveSystem during its save process
+	print("TeaShop: Game data collected")
+
+func load_game_data(save_data: Dictionary) -> void:
+	print("TeaShop: Restoring game data from save...")
+	
+	# Restore inventory
+	if save_data.has("inventory") and inventory_system:
+		inventory_system.load_save_data(save_data.inventory)
+		print("TeaShop: Inventory restored")
+	
+	# Restore milk
+	if save_data.has("milk_system") and milk_system:
+		var milk_data = save_data.get("milk_system", {})
+		milk_system.current_milk_stock = milk_data.get("current_stock", 0.0)
+		milk_system.emit_signal("milk_stock_changed", milk_system.current_milk_stock)
+		print("TeaShop: Milk stock restored to ", milk_system.current_milk_stock)
+	
+	# Restore stats
+	if save_data.has("stats_manager") and stats_manager:
+		stats_manager.load_save_data(save_data.stats_manager)
+		print("TeaShop: Stats restored")
+	
+	# Update UI to reflect loaded state
+	_update_ui()
+	
+	# FORCE milk UI refresh after everything loads
+	await get_tree().create_timer(0.1).timeout
+	if milk_system:
+		milk_system.emit_signal("milk_stock_changed", milk_system.current_milk_stock)
+	
+	print("TeaShop: Game data restoration complete")
+
 func _update_weather_display() -> void:
 	if not weather_label:
 		return
@@ -270,6 +338,10 @@ func _on_phase_changed(new_phase: int) -> void:
 				start_day_button.disabled = true
 				start_day_button.text = "Day In Progress"
 		PhaseManager.Phase.EVENING_REVIEW:
+			# Auto-save at end of each day (captures all the day's data)
+			print("TeaShop: Triggering auto-save at end of Day ", GameState.current_day)
+			SaveSystem.save_game()
+			
 			if start_day_button:
 				start_day_button.text = "Reviewing Day..."
 
@@ -405,7 +477,11 @@ func _on_reputation_changed(new_value: int) -> void:
 	_check_unlocks()
 
 func _on_save_game() -> void:
-	print("Save game functionality to be implemented")
+	print("TeaShop: Manual save requested")
+	if SaveSystem.save_game():
+		print("TeaShop: Game saved successfully!")
+	else:
+		print("TeaShop: Save failed!")
 
 func _on_stats_updated(stats: Dictionary) -> void:
 	# Update UI elements that show live stats

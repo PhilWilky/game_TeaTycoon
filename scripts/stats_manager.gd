@@ -177,3 +177,29 @@ func _on_customer_served(customer_data: Dictionary, satisfaction: float) -> void
 func _on_customer_missed(_reason: int) -> void:
 	daily_stats.customers_missed += 1
 	emit_signal("daily_stats_updated", get_current_stats())
+
+# Save/Load support
+func get_save_data() -> Dictionary:
+	return {
+		"historical_stats": historical_stats.duplicate(true),
+		"daily_stats": daily_stats.duplicate(true)
+	}
+
+func load_save_data(data: Dictionary) -> void:
+	historical_stats = data.get("historical_stats", []).duplicate(true)
+	daily_stats = data.get("daily_stats", {
+		"revenue": 0.0,
+		"costs": 0.0,
+		"profit": 0.0,
+		"customers_served": 0,
+		"customers_missed": 0,
+		"satisfaction_total": 0.0,
+		"tea_sold": {},
+		"milk_used": 0,
+		"staff_costs": 0.0,
+		"restock_costs": 0.0,
+		"milk_costs": 0.0,
+		"milk_spoiled_units": 0.0,
+		"milk_spoiled_value": 0.0
+	}).duplicate(true)
+	emit_signal("daily_stats_updated", get_current_stats())
