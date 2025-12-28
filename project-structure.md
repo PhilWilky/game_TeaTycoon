@@ -1,0 +1,59 @@
+﻿- .gitattributes
+- .gitignore
+- Create-Universal-FileTree.ps1
+- debug-session-annotated.txt
+- Get-Current-File-Folder-tree.ps1
+- icon.svg
+- icon.svg.import
+- project.godot
+- project-structure.md
+- .vscode/
+  - settings.json
+- docs/
+  - Priority Action Plan.md
+  - OLD/
+    - file_map_and_flow.md
+    - gaps_and_quickwins.md
+    - Godot_Signals_CheatSheet.md
+    - Planning & Architecture Guide.md
+    - tab_notification_guide.md
+- scenes/
+  - customer_manager.gd
+  - customer_queue.tscn
+  - game_hud.tscn
+  - inventory_panel.tscn
+  - MainMenu.tscn
+  - PauseMenu.tscn
+  - phase_panel.tscn
+  - staff_card.tscn
+  - tea_card.tscn
+  - TeaShop.tscn
+- scripts/
+  - events.gd
+  - game_logic.gd
+  - game_loop_manager.gd
+  - game_state.gd
+  - game_types.gd
+  - main_menu.gd
+  - milk_system.gd
+  - pause_menu.gd
+  - save_system.gd
+  - staff_card.gd
+  - stats_manager.gd
+  - stock_management.gd
+  - tea_card.gd
+  - tea_manager.gd
+  - tea_production_manager.gd
+  - tea_shop.gd
+  - systems/
+    - customer_demand.gd
+    - customer_manager.gd
+    - inventory_system.gd
+    - phase_manager.gd
+  - ui/
+    - customer_queue.gd
+    - game_hud.gd
+    - phase_panel.gd
+    - tab_notification_system.gd
+- themes/
+  - tea_shop_theme.tres
